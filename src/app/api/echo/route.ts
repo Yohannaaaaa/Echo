@@ -21,6 +21,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Humeur invalide.' }, { status: 400 });
   }
 
-  const echoId = createEcho(user.id, user.city, user.countryCode, songTitle.slice(0, 120), songArtist?.slice(0, 120), mood, note);
+  const echoId = await createEcho(user.id, user.city, user.countryCode, songTitle.slice(0, 120), songArtist?.slice(0, 120), mood, note);
   return NextResponse.json({ echoId });
 }

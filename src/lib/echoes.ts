@@ -33,7 +33,7 @@ export type EchoRow = {
   origin_country_code: string;
 };
 
-export function createEcho(
+export async function createEcho(
   creatorId: string,
   city: string,
   countryCode: string,
@@ -42,19 +42,21 @@ export function createEcho(
   mood: string,
   note: string | undefined,
 ) {
-  const db = getDb();
+  const db = await getDb();
   const echoId = uuidv4();
   const now = Date.now();
-  db.prepare(
-    `INSERT INTO echoes (id, creator_id, song_title, song_artist, mood, note, sent_at, origin_city, origin_country_code)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(echoId, creatorId, songTitle, songArtist ?? null, mood, note ?? null, now, city, countryCode);
+  await db.execute({
+    sql: `INSERT INTO echoes (id, creator_id, song_title, song_artist, mood, note, sent_at, origin_city, origin_country_code)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [echoId, creatorId, songTitle, songArtist ?? null, mood, note ?? null, now, city, countryCode],
+  });
 
   const hopId = uuidv4();
-  db.prepare(
-    `INSERT INTO hops (id, echo_id, parent_hop_id, recipient_id, is_origin, is_bot, chain_length, city, country_code, received_at, reply_note, reveal_choice)
-     VALUES (?, ?, NULL, ?, 1, 0, 1, ?, ?, ?, NULL, 'revealed')`,
-  ).run(hopId, echoId, creatorId, city, countryCode, now);
+  await db.execute({
+    sql: `INSERT INTO hops (id, echo_id, parent_hop_id, recipient_id, is_origin, is_bot, chain_length, city, country_code, received_at, reply_note, reveal_choice)
+          VALUES (?, ?, NULL, ?, 1, 0, 1, ?, ?, ?, NULL, 'revealed')`,
+    args: [hopId, echoId, creatorId, city, countryCode, now],
+  });
 
   return echoId;
 }
@@ -68,136 +70,137 @@ const BOT_REVEAL_POOL: Array<'revealed' | 'mystery'> = [
  * chance of "arriving" somewhere new in the world, simulating other people
  * discovering it, without needing a real background worker.
  */
-export function propagateEchoes() {
-  const db = getDb();
+export async function propagateEchoes() {
+  const db = await getDb();
   const threshold = Date.now() - PROPAGATION_DELAY_MS;
-  const leaves = db
-    .prepare(
-      `SELECT h.* FROM hops h
-       WHERE h.received_at <= ?
-       AND NOT EXISTS (SELECT 1 FROM hops c WHERE c.parent_hop_id = h.id)`,
-    )
-    .all(threshold) as HopRow[];
-
-  const insert = db.prepare(
-    `INSERT INTO hops (id, echo_id, parent_hop_id, recipient_id, is_origin, is_bot, chain_length, city, country_code, received_at, reply_note, reveal_choice)
-     VALUES (?, ?, ?, NULL, 0, 1, ?, ?, ?, ?, NULL, ?)`,
-  );
+  const result = await db.execute({
+    sql: `SELECT h.* FROM hops h
+          WHERE h.received_at <= ?
+          AND NOT EXISTS (SELECT 1 FROM hops c WHERE c.parent_hop_id = h.id)`,
+    args: [threshold],
+  });
+  const leaves = result.rows as unknown as HopRow[];
 
   for (const leaf of leaves) {
     if (leaf.chain_length >= MAX_CHAIN_LENGTH) continue;
     if (Math.random() > 0.75) continue;
     const nextCity = randomCityExcluding(leaf.city);
     const reveal = BOT_REVEAL_POOL[Math.floor(Math.random() * BOT_REVEAL_POOL.length)];
-    insert.run(
-      uuidv4(),
-      leaf.echo_id,
-      leaf.id,
-      leaf.chain_length + 1,
-      nextCity.name,
-      nextCity.countryCode,
-      Date.now(),
-      reveal,
-    );
+    await db.execute({
+      sql: `INSERT INTO hops (id, echo_id, parent_hop_id, recipient_id, is_origin, is_bot, chain_length, city, country_code, received_at, reply_note, reveal_choice)
+            VALUES (?, ?, ?, NULL, 0, 1, ?, ?, ?, ?, NULL, ?)`,
+      args: [uuidv4(), leaf.echo_id, leaf.id, leaf.chain_length + 1, nextCity.name, nextCity.countryCode, Date.now(), reveal],
+    });
   }
 }
 
-export function deliverEchoesToUser(userId: string, city: string, countryCode: string) {
-  const db = getDb();
+export async function deliverEchoesToUser(userId: string, city: string, countryCode: string) {
+  const db = await getDb();
 
-  const candidateLeaves = db
-    .prepare(
-      `SELECT h.* FROM hops h
-       JOIN echoes e ON e.id = h.echo_id
-       WHERE e.creator_id != ?
-       AND NOT EXISTS (SELECT 1 FROM hops c WHERE c.parent_hop_id = h.id)
-       AND NOT EXISTS (
-         SELECT 1 FROM hops mine WHERE mine.echo_id = h.echo_id AND mine.recipient_id = ?
-       )
-       ORDER BY RANDOM()
-       LIMIT ?`,
-    )
-    .all(userId, userId, MAX_DELIVERIES_PER_PULL) as HopRow[];
-
-  const insert = db.prepare(
-    `INSERT INTO hops (id, echo_id, parent_hop_id, recipient_id, is_origin, is_bot, chain_length, city, country_code, received_at, reply_note, reveal_choice)
-     VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, NULL, 'pending')`,
-  );
+  const result = await db.execute({
+    sql: `SELECT h.* FROM hops h
+          JOIN echoes e ON e.id = h.echo_id
+          WHERE e.creator_id != ?
+          AND NOT EXISTS (SELECT 1 FROM hops c WHERE c.parent_hop_id = h.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM hops mine WHERE mine.echo_id = h.echo_id AND mine.recipient_id = ?
+          )
+          ORDER BY RANDOM()
+          LIMIT ?`,
+    args: [userId, userId, MAX_DELIVERIES_PER_PULL],
+  });
+  const candidateLeaves = result.rows as unknown as HopRow[];
 
   const delivered: string[] = [];
   for (const leaf of candidateLeaves) {
     const id = uuidv4();
-    insert.run(id, leaf.echo_id, leaf.id, userId, leaf.chain_length + 1, city, countryCode, Date.now());
+    await db.execute({
+      sql: `INSERT INTO hops (id, echo_id, parent_hop_id, recipient_id, is_origin, is_bot, chain_length, city, country_code, received_at, reply_note, reveal_choice)
+            VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, NULL, 'pending')`,
+      args: [id, leaf.echo_id, leaf.id, userId, leaf.chain_length + 1, city, countryCode, Date.now()],
+    });
     delivered.push(leaf.echo_id);
   }
   return delivered;
 }
 
-export function getInboxForUser(userId: string) {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT h.id as hopId, h.echo_id as echoId, h.chain_length as chainLength, h.received_at as receivedAt,
-              h.reply_note as replyNote, h.reveal_choice as revealChoice, h.city as city, h.country_code as countryCode,
-              e.song_title as songTitle, e.song_artist as songArtist, e.mood as mood, e.note as note,
-              e.sent_at as sentAt, e.origin_city as originCity, e.origin_country_code as originCountryCode,
-              p.city as fromCity, p.country_code as fromCountryCode, p.reply_note as fromNote
-       FROM hops h
-       JOIN echoes e ON e.id = h.echo_id
-       LEFT JOIN hops p ON p.id = h.parent_hop_id
-       WHERE h.recipient_id = ? AND h.is_origin = 0
-       ORDER BY h.received_at DESC`,
-    )
-    .all(userId);
-  return rows;
+export async function getInboxForUser(userId: string) {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: `SELECT h.id as hopId, h.echo_id as echoId, h.chain_length as chainLength, h.received_at as receivedAt,
+                 h.reply_note as replyNote, h.reveal_choice as revealChoice, h.city as city, h.country_code as countryCode,
+                 e.song_title as songTitle, e.song_artist as songArtist, e.mood as mood, e.note as note,
+                 e.sent_at as sentAt, e.origin_city as originCity, e.origin_country_code as originCountryCode,
+                 p.city as fromCity, p.country_code as fromCountryCode, p.reply_note as fromNote
+          FROM hops h
+          JOIN echoes e ON e.id = h.echo_id
+          LEFT JOIN hops p ON p.id = h.parent_hop_id
+          WHERE h.recipient_id = ? AND h.is_origin = 0
+          ORDER BY h.received_at DESC`,
+    args: [userId],
+  });
+  return result.rows;
 }
 
-export function replyToHop(hopId: string, userId: string, replyNote: string) {
-  const db = getDb();
-  const result = db
-    .prepare('UPDATE hops SET reply_note = ? WHERE id = ? AND recipient_id = ?')
-    .run(replyNote, hopId, userId);
-  return result.changes > 0;
+export async function replyToHop(hopId: string, userId: string, replyNote: string) {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: 'UPDATE hops SET reply_note = ? WHERE id = ? AND recipient_id = ?',
+    args: [replyNote, hopId, userId],
+  });
+  return result.rowsAffected > 0;
 }
 
-export function setHopReveal(hopId: string, userId: string, choice: 'revealed' | 'mystery') {
-  const db = getDb();
-  const result = db
-    .prepare('UPDATE hops SET reveal_choice = ? WHERE id = ? AND recipient_id = ?')
-    .run(choice, hopId, userId);
-  return result.changes > 0;
+export async function setHopReveal(hopId: string, userId: string, choice: 'revealed' | 'mystery') {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: 'UPDATE hops SET reveal_choice = ? WHERE id = ? AND recipient_id = ?',
+    args: [choice, hopId, userId],
+  });
+  return result.rowsAffected > 0;
 }
 
-export function getJourney(echoId: string) {
-  const db = getDb();
-  const echo = db.prepare('SELECT * FROM echoes WHERE id = ?').get(echoId) as EchoRow | undefined;
+export async function getJourney(echoId: string) {
+  const db = await getDb();
+  const echoResult = await db.execute({ sql: 'SELECT * FROM echoes WHERE id = ?', args: [echoId] });
+  const echo = echoResult.rows[0] as unknown as EchoRow | undefined;
   if (!echo) return null;
-  const hops = db
-    .prepare('SELECT * FROM hops WHERE echo_id = ? ORDER BY chain_length ASC, received_at ASC')
-    .all(echoId) as HopRow[];
-  return { echo, hops };
+  const hopsResult = await db.execute({
+    sql: 'SELECT * FROM hops WHERE echo_id = ? ORDER BY chain_length ASC, received_at ASC',
+    args: [echoId],
+  });
+  return { echo, hops: hopsResult.rows as unknown as HopRow[] };
 }
 
-export function getMyEchoesToday(userId: string) {
-  const db = getDb();
+export async function getMyEchoesToday(userId: string) {
+  const db = await getDb();
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
-  const echoes = db
-    .prepare('SELECT * FROM echoes WHERE creator_id = ? ORDER BY sent_at DESC')
-    .all(userId) as EchoRow[];
-
-  return echoes.map((echo) => {
-    const hopsToday = db
-      .prepare(
-        `SELECT * FROM hops WHERE echo_id = ? AND is_origin = 0 AND received_at >= ?
-         ORDER BY received_at ASC`,
-      )
-      .all(echo.id, startOfDay.getTime()) as HopRow[];
-    const totalHops = db
-      .prepare('SELECT COUNT(*) as c FROM hops WHERE echo_id = ? AND is_origin = 0')
-      .get(echo.id) as { c: number };
-    return { echo, hopsToday, totalRecipients: totalHops.c };
+  const echoesResult = await db.execute({
+    sql: 'SELECT * FROM echoes WHERE creator_id = ? ORDER BY sent_at DESC',
+    args: [userId],
   });
+  const echoes = echoesResult.rows as unknown as EchoRow[];
+
+  const groups = [];
+  for (const echo of echoes) {
+    const hopsTodayResult = await db.execute({
+      sql: `SELECT * FROM hops WHERE echo_id = ? AND is_origin = 0 AND received_at >= ?
+            ORDER BY received_at ASC`,
+      args: [echo.id, startOfDay.getTime()],
+    });
+    const totalResult = await db.execute({
+      sql: 'SELECT COUNT(*) as c FROM hops WHERE echo_id = ? AND is_origin = 0',
+      args: [echo.id],
+    });
+    const totalRow = totalResult.rows[0] as unknown as { c: number };
+    groups.push({
+      echo,
+      hopsToday: hopsTodayResult.rows as unknown as HopRow[],
+      totalRecipients: totalRow.c,
+    });
+  }
+  return groups;
 }
 
 export { cityByName };

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const user = await ensureIdentity();
-  propagateEchoes();
-  const mine = getMyEchoesToday(user.id);
+  await propagateEchoes();
+  const mine = await getMyEchoesToday(user.id);
   return NextResponse.json({ mine });
 }

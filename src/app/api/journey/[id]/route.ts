@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   await ensureIdentity();
-  propagateEchoes();
+  await propagateEchoes();
   const { id } = await params;
-  const journey = getJourney(id);
+  const journey = await getJourney(id);
   if (!journey) return NextResponse.json({ error: 'Écho introuvable.' }, { status: 404 });
   return NextResponse.json(journey);
 }

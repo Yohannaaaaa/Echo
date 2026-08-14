@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   if (!hopId || !choice) {
     return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
   }
-  const ok = setHopReveal(hopId, user.id, choice);
+  const ok = await setHopReveal(hopId, user.id, choice);
   if (!ok) return NextResponse.json({ error: 'Écho introuvable.' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

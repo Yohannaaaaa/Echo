@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const user = await ensureIdentity();
-  propagateEchoes();
+  await propagateEchoes();
   if (user.city && user.countryCode) {
-    deliverEchoesToUser(user.id, user.city, user.countryCode);
+    await deliverEchoesToUser(user.id, user.city, user.countryCode);
   }
-  const inbox = getInboxForUser(user.id);
+  const inbox = await getInboxForUser(user.id);
   return NextResponse.json({ inbox, user });
 }

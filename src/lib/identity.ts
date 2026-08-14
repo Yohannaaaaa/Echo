@@ -18,22 +18,30 @@ export type CurrentUser = {
 export async function ensureIdentity(): Promise<CurrentUser> {
   const store = await cookies();
   const existing = store.get(IDENTITY_COOKIE)?.value;
-  const db = getDb();
+  const db = await getDb();
 
   if (existing) {
-    const row = db
-      .prepare('SELECT id, city, country_code as countryCode FROM users WHERE id = ?')
-      .get(existing) as CurrentUser | undefined;
-    if (row) return row;
+    const result = await db.execute({
+      sql: 'SELECT id, city, country_code as countryCode FROM users WHERE id = ?',
+      args: [existing],
+    });
+    const row = result.rows[0];
+    if (row) return { id: row.id as string, city: row.city as string | null, countryCode: row.countryCode as string | null };
   }
 
   const id = uuidv4();
-  db.prepare('INSERT INTO users (id, city, country_code, created_at) VALUES (?, NULL, NULL, ?)').run(id, Date.now());
+  await db.execute({
+    sql: 'INSERT INTO users (id, city, country_code, created_at) VALUES (?, NULL, NULL, ?)',
+    args: [id, Date.now()],
+  });
   store.set(IDENTITY_COOKIE, id, { maxAge: ONE_YEAR, path: '/', sameSite: 'lax' });
   return { id, city: null, countryCode: null };
 }
 
-export function setUserCity(userId: string, city: string, countryCode: string) {
-  const db = getDb();
-  db.prepare('UPDATE users SET city = ?, country_code = ? WHERE id = ?').run(city, countryCode, userId);
+export async function setUserCity(userId: string, city: string, countryCode: string) {
+  const db = await getDb();
+  await db.execute({
+    sql: 'UPDATE users SET city = ?, country_code = ? WHERE id = ?',
+    args: [city, countryCode, userId],
+  });
 }

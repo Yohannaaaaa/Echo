@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   if (!hopId || !note) {
     return NextResponse.json({ error: 'Message requis.' }, { status: 400 });
   }
-  const ok = replyToHop(hopId, user.id, note);
+  const ok = await replyToHop(hopId, user.id, note);
   if (!ok) return NextResponse.json({ error: 'Écho introuvable.' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

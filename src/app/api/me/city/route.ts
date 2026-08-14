@@ -9,6 +9,6 @@ export async function POST(req: Request) {
   if (!city) {
     return NextResponse.json({ error: 'Ville inconnue.' }, { status: 400 });
   }
-  setUserCity(user.id, city.name, city.countryCode);
+  await setUserCity(user.id, city.name, city.countryCode);
   return NextResponse.json({ user: { ...user, city: city.name, countryCode: city.countryCode } });
 }

@@ -16,7 +16,7 @@ Tu vis un moment — une chanson à 2h17 du matin, une humeur, une phrase — et
 
 - [Next.js 16](https://nextjs.org/) (App Router, Route Handlers) + TypeScript
 - [Tailwind CSS](https://tailwindcss.com/) pour l'interface (thème sombre, mobile-first)
-- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — base de données locale, aucun service externe requis
+- [@libsql/client](https://github.com/tursodatabase/libsql-client-ts) — SQLite en local (fichier), ou [Turso](https://turso.tech) une fois déployé (même client, juste une URL différente)
 - Identité anonyme par cookie (aucun compte, aucun mot de passe)
 
 ## Démarrer en local
@@ -27,7 +27,31 @@ npm run seed   # peuple la base avec un écho "phare" (Paris → Istanbul → To
 npm run dev
 ```
 
-Puis ouvre [http://localhost:3000](http://localhost:3000).
+Puis ouvre [http://localhost:3000](http://localhost:3000). Aucune variable d'environnement n'est nécessaire en local — l'app écrit dans `data/echo.db`.
+
+## Déployer sur Vercel
+
+Vercel n'a pas de disque persistant, donc la base locale ne suffit pas en production : il faut une base [Turso](https://turso.tech) (SQLite hébergé, gratuit pour ce genre de projet, et compatible avec le même client `@libsql/client` — aucun changement de code entre local et prod).
+
+1. **Créer la base Turso**
+   ```bash
+   curl -sSfL https://get.tur.so/install.sh | bash   # installe la CLI turso
+   turso auth signup                                  # ou `turso auth login` si tu as déjà un compte
+   turso db create echo
+   turso db show echo --url                           # → TURSO_DATABASE_URL
+   turso db tokens create echo                         # → TURSO_AUTH_TOKEN
+   ```
+   (Tout est aussi faisable depuis [tur.so](https://tur.so) sans la CLI.)
+
+2. **Importer le contenu de démo (optionnel)**
+   ```bash
+   TURSO_DATABASE_URL=<url> TURSO_AUTH_TOKEN=<token> npm run seed
+   ```
+
+3. **Déployer sur Vercel**
+   - Importe le dépôt GitHub `Yohannaaaaa/Echo` depuis [vercel.com/new](https://vercel.com/new) (Next.js est détecté automatiquement, aucune configuration à changer).
+   - Dans *Project Settings → Environment Variables*, ajoute `TURSO_DATABASE_URL` et `TURSO_AUTH_TOKEN`.
+   - Déploie. C'est tout — mêmes routes, même code, juste une base hébergée à la place du fichier local.
 
 ## Comment ça marche (résumé technique)
 

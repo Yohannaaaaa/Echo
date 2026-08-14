@@ -38,6 +38,8 @@ const BOT_ANSWER_POOL = [
   'Je n’ai jamais autant douté qu’en ce moment.',
 ];
 
+type Question = { id: string; question_date: string; text: string };
+
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -48,62 +50,77 @@ function pickQuestion(dateKey: string) {
   return QUESTION_POOL[hash % QUESTION_POOL.length];
 }
 
-export function getOrCreateTodayQuestion() {
-  const db = getDb();
+export async function getOrCreateTodayQuestion(): Promise<Question> {
+  const db = await getDb();
   const dateKey = todayKey();
-  let question = db
-    .prepare('SELECT * FROM global_questions WHERE question_date = ?')
-    .get(dateKey) as { id: string; question_date: string; text: string } | undefined;
+  const existing = await db.execute({
+    sql: 'SELECT * FROM global_questions WHERE question_date = ?',
+    args: [dateKey],
+  });
+  const found = existing.rows[0] as unknown as Question | undefined;
+  if (found) return found;
 
-  if (!question) {
-    const id = uuidv4();
-    const text = pickQuestion(dateKey);
-    db.prepare('INSERT INTO global_questions (id, question_date, text) VALUES (?, ?, ?)').run(id, dateKey, text);
-    question = { id, question_date: dateKey, text };
-    seedBotResponses(id);
+  const id = uuidv4();
+  const text = pickQuestion(dateKey);
+  try {
+    await db.execute({
+      sql: 'INSERT INTO global_questions (id, question_date, text) VALUES (?, ?, ?)',
+      args: [id, dateKey, text],
+    });
+  } catch {
+    // Another concurrent request created it first — fetch what it wrote.
+    const retry = await db.execute({
+      sql: 'SELECT * FROM global_questions WHERE question_date = ?',
+      args: [dateKey],
+    });
+    return retry.rows[0] as unknown as Question;
   }
+  const question = { id, question_date: dateKey, text };
+  await seedBotResponses(id);
   return question;
 }
 
-function seedBotResponses(questionId: string) {
-  const db = getDb();
-  const insert = db.prepare(
-    `INSERT INTO global_responses (id, question_id, user_id, city, country_code, text, created_at, is_bot)
-     VALUES (?, ?, NULL, ?, ?, ?, ?, 1)`,
-  );
+async function seedBotResponses(questionId: string) {
+  const db = await getDb();
   const shuffledAnswers = [...BOT_ANSWER_POOL].sort(() => Math.random() - 0.5).slice(0, 14);
   const shuffledCities = [...CITIES].sort(() => Math.random() - 0.5);
   const now = Date.now();
-  shuffledAnswers.forEach((text, i) => {
+  for (let i = 0; i < shuffledAnswers.length; i++) {
     const city = shuffledCities[i % shuffledCities.length];
-    insert.run(uuidv4(), questionId, city.name, city.countryCode, text, now - Math.floor(Math.random() * 3_600_000));
+    await db.execute({
+      sql: `INSERT INTO global_responses (id, question_id, user_id, city, country_code, text, created_at, is_bot)
+            VALUES (?, ?, NULL, ?, ?, ?, ?, 1)`,
+      args: [uuidv4(), questionId, city.name, city.countryCode, shuffledAnswers[i], now - Math.floor(Math.random() * 3_600_000)],
+    });
+  }
+}
+
+export async function hasResponded(questionId: string, userId: string) {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: 'SELECT 1 FROM global_responses WHERE question_id = ? AND user_id = ?',
+    args: [questionId, userId],
   });
+  return result.rows.length > 0;
 }
 
-export function hasResponded(questionId: string, userId: string) {
-  const db = getDb();
-  const row = db
-    .prepare('SELECT 1 FROM global_responses WHERE question_id = ? AND user_id = ?')
-    .get(questionId, userId);
-  return !!row;
-}
-
-export function submitResponse(questionId: string, userId: string, city: string, countryCode: string, text: string) {
-  const db = getDb();
-  if (hasResponded(questionId, userId)) return false;
-  db.prepare(
-    `INSERT INTO global_responses (id, question_id, user_id, city, country_code, text, created_at, is_bot)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
-  ).run(uuidv4(), questionId, userId, city, countryCode, text, Date.now());
+export async function submitResponse(questionId: string, userId: string, city: string, countryCode: string, text: string) {
+  const db = await getDb();
+  if (await hasResponded(questionId, userId)) return false;
+  await db.execute({
+    sql: `INSERT INTO global_responses (id, question_id, user_id, city, country_code, text, created_at, is_bot)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+    args: [uuidv4(), questionId, userId, city, countryCode, text, Date.now()],
+  });
   return true;
 }
 
-export function getFeed(questionId: string) {
-  const db = getDb();
-  return db
-    .prepare(
-      `SELECT city, country_code as countryCode, text, created_at as createdAt, is_bot as isBot
-       FROM global_responses WHERE question_id = ? ORDER BY RANDOM() LIMIT 60`,
-    )
-    .all(questionId);
+export async function getFeed(questionId: string) {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: `SELECT city, country_code as countryCode, text, created_at as createdAt, is_bot as isBot
+          FROM global_responses WHERE question_id = ? ORDER BY RANDOM() LIMIT 60`,
+    args: [questionId],
+  });
+  return result.rows;
 }
