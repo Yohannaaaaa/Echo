@@ -53,6 +53,16 @@ Vercel n'a pas de disque persistant, donc la base locale ne suffit pas en produc
    - Dans *Project Settings → Environment Variables*, ajoute `TURSO_DATABASE_URL` et `TURSO_AUTH_TOKEN`.
    - Déploie. C'est tout — mêmes routes, même code, juste une base hébergée à la place du fichier local.
 
+## Email de réinitialisation de mot de passe
+
+L'app envoie un email (depuis `support.hejecho@gmail.com`) quand quelqu'un demande à réinitialiser son mot de passe. Ça passe par le SMTP de Gmail via [nodemailer](https://nodemailer.com/), avec un **mot de passe d'application** — jamais le mot de passe normal du compte Google.
+
+1. Sur le compte Gmail `support.hejecho@gmail.com`, active la validation en deux étapes (*Compte Google → Sécurité → Validation en deux étapes*) si ce n'est pas déjà fait — Google l'exige pour créer un mot de passe d'application.
+2. Va sur [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), crée un mot de passe d'application (nom libre, ex. "ECHO"), et copie le code à 16 caractères généré.
+3. Ajoute-le comme variable d'environnement `GMAIL_APP_PASSWORD` dans *Project Settings → Environment Variables* sur Vercel (et en local dans `.env.local` si besoin de tester).
+
+Sans cette variable, les demandes de reset sont acceptées normalement mais l'email n'est simplement pas envoyé (erreur loggée côté serveur, rien ne casse pour l'utilisateur).
+
 ## Comment ça marche (résumé technique)
 
 - Chaque écho est une ligne `echoes`, et chaque étape de son voyage (« hop ») une ligne `hops`, chaînées par `parent_hop_id`.

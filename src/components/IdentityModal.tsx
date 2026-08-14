@@ -7,7 +7,7 @@ function formatCode(code: string) {
   return code.match(/.{1,4}/g)?.join('-') ?? code;
 }
 
-type Mode = 'view' | 'restoreCode' | 'login' | 'password' | 'pseudo';
+type Mode = 'view' | 'restoreCode' | 'login' | 'password' | 'pseudo' | 'forgot';
 
 export default function IdentityModal() {
   const { user, identityModalOpen, closeIdentityModal, restore, signup, login, setPseudo } = useIdentity();
@@ -19,6 +19,7 @@ export default function IdentityModal() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   if (!identityModalOpen || !user) return null;
 
@@ -29,6 +30,7 @@ export default function IdentityModal() {
     setPassword('');
     setPseudoInput('');
     setError(null);
+    setForgotSent(false);
   }
 
   function close() {
@@ -64,6 +66,19 @@ export default function IdentityModal() {
     setBusy(false);
     if (!result.ok) return setError(result.error);
     reset();
+  }
+
+  async function handleForgot() {
+    if (!email.trim()) return;
+    setBusy(true);
+    setError(null);
+    await fetch('/api/auth/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    setBusy(false);
+    setForgotSent(true);
   }
 
   async function handleSetPseudo() {
@@ -226,7 +241,49 @@ export default function IdentityModal() {
             >
               {busy ? 'Connexion…' : 'Se connecter'}
             </button>
+            <button
+              onClick={() => {
+                setError(null);
+                setMode('forgot');
+              }}
+              className="w-full text-center text-xs text-white/40 underline underline-offset-2"
+            >
+              Mot de passe oublié ?
+            </button>
             <button onClick={() => setMode('view')} className="w-full text-center text-xs text-white/40 underline underline-offset-2">
+              Retour
+            </button>
+          </>
+        )}
+
+        {mode === 'forgot' && (
+          <>
+            <h2 className="text-xl font-semibold">Mot de passe oublié</h2>
+            {forgotSent ? (
+              <p className="text-sm text-white/60">
+                Si un compte existe avec cet email, un lien de réinitialisation vient d&apos;être envoyé — valable
+                60 minutes.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-white/60">On t&apos;envoie un lien pour en choisir un nouveau.</p>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ton@email.com"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
+                />
+                <button
+                  disabled={!email.trim() || busy}
+                  onClick={handleForgot}
+                  className="btn-primary w-full py-3.5 disabled:opacity-50"
+                >
+                  {busy ? 'Envoi…' : 'Envoyer le lien'}
+                </button>
+              </>
+            )}
+            <button onClick={() => setMode('login')} className="w-full text-center text-xs text-white/40 underline underline-offset-2">
               Retour
             </button>
           </>

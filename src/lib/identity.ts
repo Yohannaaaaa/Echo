@@ -1,8 +1,10 @@
 import { cookies } from 'next/headers';
-import { randomUUID as uuidv4 } from 'crypto';
+import { randomUUID as uuidv4, randomBytes } from 'crypto';
 import { getDb } from './db';
 import { detectGeoFromHeaders } from './geo-server';
 import { hashPassword, verifyPassword } from './password';
+
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export const IDENTITY_COOKIE = 'echo_uid';
 const ONE_YEAR = 60 * 60 * 24 * 365;
@@ -204,4 +206,61 @@ export async function loginWithCredentials(rawEmail: string, password: string): 
   const store = await cookies();
   store.set(IDENTITY_COOKIE, row.id as string, { maxAge: ONE_YEAR, path: '/', sameSite: 'lax' });
   return rowToUser(row);
+}
+
+/**
+ * Generates a one-time password reset token for the account attached to
+ * this email, if one exists with a password set. Returns null when there's
+ * nothing to reset — callers should still show a generic "email sent"
+ * message either way, to avoid leaking which emails have accounts.
+ */
+export async function requestPasswordReset(rawEmail: string): Promise<string | null> {
+  const email = rawEmail.trim().toLowerCase();
+  const db = await getDb();
+  const result = await db.execute({
+    sql: 'SELECT id FROM users WHERE email = ? AND password_hash IS NOT NULL',
+    args: [email],
+  });
+  const row = result.rows[0];
+  if (!row) return null;
+
+  const token = randomBytes(32).toString('hex');
+  const now = Date.now();
+  await db.execute({
+    sql: 'INSERT INTO password_resets (id, user_id, token, created_at, expires_at, used) VALUES (?, ?, ?, ?, ?, 0)',
+    args: [uuidv4(), row.id as string, token, now, now + PASSWORD_RESET_TTL_MS],
+  });
+  return token;
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ ok: true; user: CurrentUser } | { ok: false; error: string }> {
+  if (newPassword.length < 8) {
+    return { ok: false, error: 'Le mot de passe doit faire au moins 8 caractères.' };
+  }
+
+  const db = await getDb();
+  const result = await db.execute({
+    sql: 'SELECT id, user_id as userId, expires_at as expiresAt, used FROM password_resets WHERE token = ?',
+    args: [token],
+  });
+  const reset = result.rows[0];
+  if (!reset || reset.used || (reset.expiresAt as number) < Date.now()) {
+    return { ok: false, error: 'Ce lien a expiré ou a déjà été utilisé. Refais une demande.' };
+  }
+
+  const passwordHash = hashPassword(newPassword);
+  await db.execute({
+    sql: 'UPDATE users SET password_hash = ? WHERE id = ?',
+    args: [passwordHash, reset.userId as string],
+  });
+  await db.execute({ sql: 'UPDATE password_resets SET used = 1 WHERE id = ?', args: [reset.id as string] });
+
+  const store = await cookies();
+  store.set(IDENTITY_COOKIE, reset.userId as string, { maxAge: ONE_YEAR, path: '/', sameSite: 'lax' });
+
+  const userResult = await db.execute({ sql: `SELECT ${USER_COLUMNS} FROM users WHERE id = ?`, args: [reset.userId] });
+  return { ok: true, user: rowToUser(userResult.rows[0]) };
 }

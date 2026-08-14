@@ -75,10 +75,20 @@ const SCHEMA_STATEMENTS = [
     is_bot INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (question_id) REFERENCES global_questions(id)
   )`,
+  `CREATE TABLE IF NOT EXISTS password_resets (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_hops_echo ON hops(echo_id)`,
   `CREATE INDEX IF NOT EXISTS idx_hops_recipient ON hops(recipient_id)`,
   `CREATE INDEX IF NOT EXISTS idx_echoes_creator ON echoes(creator_id)`,
   `CREATE INDEX IF NOT EXISTS idx_responses_question ON global_responses(question_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)`,
 ];
 
 async function ensureSchema(db: Client) {
