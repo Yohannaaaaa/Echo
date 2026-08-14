@@ -87,8 +87,11 @@ export default function MinePage() {
                         <>
                           <span>👤</span>
                           <span>
-                            {hop.recipient_pseudo ? `${hop.recipient_pseudo} · ` : ''}
-                            {flagFor(hop.country_code)} {hop.city}
+                            {hop.recipient_pseudo ?? (
+                              <>
+                                {flagFor(hop.country_code)} {hop.city}
+                              </>
+                            )}
                           </span>
                         </>
                       ) : (
