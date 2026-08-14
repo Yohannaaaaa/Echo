@@ -65,6 +65,20 @@ const BOT_REVEAL_POOL: Array<'revealed' | 'mystery'> = [
   'mystery', 'mystery', 'mystery', 'revealed', 'mystery', 'revealed', 'mystery',
 ];
 
+const BOT_REPLY_POOL = [
+  'Moi non plus.',
+  'Ça me touche, merci.',
+  'Je ressens exactement pareil en ce moment.',
+  'Cette chanson, wow.',
+  "J'espère que ça va mieux depuis.",
+  'Courage.',
+  "Je ne suis pas seul(e) alors.",
+  'Ça va aller.',
+  'Merci de l’avoir partagé.',
+  'Je pense à toi, où que tu sois.',
+];
+const BOT_REPLY_CHANCE = 0.45;
+
 /**
  * Lazily grows echo chains: any leaf hop older than PROPAGATION_DELAY_MS has a
  * chance of "arriving" somewhere new in the world, simulating other people
@@ -86,10 +100,12 @@ export async function propagateEchoes() {
     if (Math.random() > 0.75) continue;
     const nextCity = randomCityExcluding(leaf.city);
     const reveal = BOT_REVEAL_POOL[Math.floor(Math.random() * BOT_REVEAL_POOL.length)];
+    const replyNote =
+      Math.random() < BOT_REPLY_CHANCE ? BOT_REPLY_POOL[Math.floor(Math.random() * BOT_REPLY_POOL.length)] : null;
     await db.execute({
       sql: `INSERT INTO hops (id, echo_id, parent_hop_id, recipient_id, is_origin, is_bot, chain_length, city, country_code, received_at, reply_note, reveal_choice)
-            VALUES (?, ?, ?, NULL, 0, 1, ?, ?, ?, ?, NULL, ?)`,
-      args: [uuidv4(), leaf.echo_id, leaf.id, leaf.chain_length + 1, nextCity.name, nextCity.countryCode, Date.now(), reveal],
+            VALUES (?, ?, ?, NULL, 0, 1, ?, ?, ?, ?, ?, ?)`,
+      args: [uuidv4(), leaf.echo_id, leaf.id, leaf.chain_length + 1, nextCity.name, nextCity.countryCode, Date.now(), replyNote, reveal],
     });
   }
 }
