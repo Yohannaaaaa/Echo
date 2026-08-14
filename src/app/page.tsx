@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useIdentity } from '@/components/IdentityProvider';
+import EchoMark from '@/components/EchoMark';
 
 export default function HomePage() {
   const { user } = useIdentity();
@@ -9,15 +10,8 @@ export default function HomePage() {
   return (
     <main className="px-5 pt-14 pb-6">
       <div className="relative mb-10 flex flex-col items-center text-center">
-        <div className="relative mb-6 flex h-28 w-28 items-center justify-center">
-          <span className="absolute inline-flex h-full w-full animate-ripple rounded-full border border-echo-500/60" />
-          <span
-            className="absolute inline-flex h-full w-full animate-ripple rounded-full border border-glow-400/50"
-            style={{ animationDelay: '0.7s' }}
-          />
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-echo-500 to-glow-400 text-3xl shadow-lg shadow-echo-500/30 animate-pulseSlow">
-            🎵
-          </div>
+        <div className="mb-6">
+          <EchoMark size={112} />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">ECHO</h1>
         <p className="mt-3 text-white/60 leading-relaxed">
