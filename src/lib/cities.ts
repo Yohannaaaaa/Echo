@@ -31,10 +31,6 @@ export function cityByName(name: string): City | undefined {
   return CITIES.find((c) => c.name === name);
 }
 
-export function flagFor(countryCode: string): string {
-  return CITIES.find((c) => c.countryCode === countryCode)?.flag ?? '🌍';
-}
-
 export function randomCityExcluding(excludeName?: string): City {
   const pool = excludeName ? CITIES.filter((c) => c.name !== excludeName) : CITIES;
   return pool[Math.floor(Math.random() * pool.length)];

@@ -13,6 +13,9 @@ type Ctx = {
   loading: boolean;
   refresh: () => Promise<void>;
   setCity: (city: string) => Promise<void>;
+  cityPickerOpen: boolean;
+  openCityPicker: () => void;
+  closeCityPicker: () => void;
 };
 
 const IdentityContext = createContext<Ctx | null>(null);
@@ -20,6 +23,7 @@ const IdentityContext = createContext<Ctx | null>(null);
 export function IdentityProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<IdentityUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/me');
@@ -36,6 +40,7 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
     });
     const data = await res.json();
     if (data.user) setUser(data.user);
+    setCityPickerOpen(false);
   }, []);
 
   useEffect(() => {
@@ -43,7 +48,19 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   return (
-    <IdentityContext.Provider value={{ user, loading, refresh, setCity }}>{children}</IdentityContext.Provider>
+    <IdentityContext.Provider
+      value={{
+        user,
+        loading,
+        refresh,
+        setCity,
+        cityPickerOpen,
+        openCityPicker: () => setCityPickerOpen(true),
+        closeCityPicker: () => setCityPickerOpen(false),
+      }}
+    >
+      {children}
+    </IdentityContext.Provider>
   );
 }
 

@@ -5,7 +5,7 @@ import { useIdentity } from '@/components/IdentityProvider';
 import EchoMark from '@/components/EchoMark';
 
 export default function HomePage() {
-  const { user } = useIdentity();
+  const { user, openCityPicker } = useIdentity();
 
   return (
     <main className="px-5 pt-14 pb-6">
@@ -52,7 +52,10 @@ export default function HomePage() {
 
       {user?.city && (
         <p className="mt-8 text-center text-xs text-white/30">
-          Tu émets depuis {user.city}
+          Tu émets depuis {user.city} ·{' '}
+          <button onClick={openCityPicker} className="underline underline-offset-2 hover:text-white/50">
+            changer
+          </button>
         </p>
       )}
     </main>

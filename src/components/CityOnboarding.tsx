@@ -5,18 +5,35 @@ import { CITIES } from '@/lib/cities';
 import { useIdentity } from './IdentityProvider';
 
 export default function CityOnboarding() {
-  const { user, loading, setCity } = useIdentity();
+  const { user, loading, setCity, cityPickerOpen, closeCityPicker } = useIdentity();
   const [saving, setSaving] = useState(false);
 
-  if (loading || !user || user.city) return null;
+  if (loading || !user) return null;
+  const forcedOpen = !user.city; // detection failed (e.g. local dev) — this step is mandatory
+  if (!forcedOpen && !cityPickerOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="card w-full max-w-md p-6 space-y-4">
+        {!forcedOpen && (
+          <button
+            onClick={closeCityPicker}
+            className="float-right text-sm text-white/40 hover:text-white/70"
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+        )}
         <div className="text-3xl">🌍</div>
-        <h2 className="text-xl font-semibold">D&apos;où pars ton premier écho ?</h2>
+        <h2 className="text-xl font-semibold">
+          {forcedOpen ? "D'où pars ton premier écho ?" : 'Changer de ville'}
+        </h2>
         <p className="text-sm text-white/60">
-          Pas de profil, pas de pseudo. Juste une ville, pour savoir où tes échos commencent leur voyage.
+          {forcedOpen
+            ? "Pas de profil, pas de pseudo. Juste une ville, pour savoir où tes échos commencent leur voyage."
+            : user.city
+              ? `Ta ville actuelle : ${user.city}. Choisis-en une autre si tu préfères ne pas la partager.`
+              : 'Choisis une ville.'}
         </p>
         <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
           {CITIES.map((c) => (

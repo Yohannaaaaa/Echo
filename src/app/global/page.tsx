@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { flagFor } from '@/lib/cities';
+import { flagFromCountryCode as flagFor } from '@/lib/geo';
 
 type Question = { id: string; question_date: string; text: string };
 type FeedItem = { city: string; countryCode: string; text: string; createdAt: number; isBot: number };

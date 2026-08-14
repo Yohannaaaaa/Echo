@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { flagFor, moodEmoji } from '@/lib/cities';
+import { moodEmoji } from '@/lib/cities';
+import { flagFromCountryCode as flagFor } from '@/lib/geo';
 
 type Hop = {
   id: string;
