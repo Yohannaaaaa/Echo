@@ -1,11 +1,21 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useIdentity } from '@/components/IdentityProvider';
 import EchoMark from '@/components/EchoMark';
+import AboutButton from '@/components/AboutButton';
 
 export default function HomePage() {
-  const { user, openCityPicker } = useIdentity();
+  const { user, openCityPicker, openIdentityModal } = useIdentity();
+  const [time, setTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    const update = () => setTime(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+    update();
+    const interval = setInterval(update, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <main className="px-5 pt-14 pb-6">
@@ -21,6 +31,7 @@ export default function HomePage() {
           <br />
           Il part dans le monde, sans profil, sans followers.
         </p>
+        <AboutButton />
       </div>
 
       <div className="space-y-3">
@@ -52,9 +63,16 @@ export default function HomePage() {
 
       {user?.city && (
         <p className="mt-8 text-center text-xs text-white/30">
-          Tu émets depuis {user.city} ·{' '}
+          Tu émets depuis {user.city}{time ? `, il est ${time}` : ''} ·{' '}
           <button onClick={openCityPicker} className="underline underline-offset-2 hover:text-white/50">
             changer
+          </button>
+        </p>
+      )}
+      {user && (
+        <p className="mt-2 text-center text-xs text-white/30">
+          <button onClick={openIdentityModal} className="underline underline-offset-2 hover:text-white/50">
+            🔑 Ton identité / retrouver tes échos
           </button>
         </p>
       )}

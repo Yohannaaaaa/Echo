@@ -89,6 +89,15 @@ async function ensureSchema(db: Client) {
   for (const statement of SCHEMA_STATEMENTS) {
     await db.execute(statement);
   }
+
+  // Additive migrations: CREATE TABLE IF NOT EXISTS above won't add columns
+  // to a database that already existed before this column was introduced.
+  try {
+    await db.execute('ALTER TABLE users ADD COLUMN recovery_code TEXT');
+  } catch (err) {
+    if (!String(err).includes('duplicate column')) throw err;
+  }
+  await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_recovery_code ON users(recovery_code)');
 }
 
 export async function getDb(): Promise<Client> {
