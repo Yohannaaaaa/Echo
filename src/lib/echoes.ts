@@ -19,6 +19,7 @@ export type HopRow = {
   received_at: number;
   reply_note: string | null;
   reveal_choice: 'pending' | 'revealed' | 'mystery';
+  recipient_pseudo: string | null;
 };
 
 export type EchoRow = {
@@ -182,7 +183,9 @@ export async function getJourney(echoId: string) {
   const echo = echoResult.rows[0] as unknown as EchoRow | undefined;
   if (!echo) return null;
   const hopsResult = await db.execute({
-    sql: 'SELECT * FROM hops WHERE echo_id = ? ORDER BY chain_length ASC, received_at ASC',
+    sql: `SELECT h.*, u.pseudo as recipient_pseudo FROM hops h
+          LEFT JOIN users u ON u.id = h.recipient_id
+          WHERE h.echo_id = ? ORDER BY h.chain_length ASC, h.received_at ASC`,
     args: [echoId],
   });
   return { echo, hops: hopsResult.rows as unknown as HopRow[] };
@@ -201,8 +204,10 @@ export async function getMyEchoesToday(userId: string) {
   const groups = [];
   for (const echo of echoes) {
     const hopsTodayResult = await db.execute({
-      sql: `SELECT * FROM hops WHERE echo_id = ? AND is_origin = 0 AND received_at >= ?
-            ORDER BY received_at ASC`,
+      sql: `SELECT h.*, u.pseudo as recipient_pseudo FROM hops h
+            LEFT JOIN users u ON u.id = h.recipient_id
+            WHERE h.echo_id = ? AND h.is_origin = 0 AND h.received_at >= ?
+            ORDER BY h.received_at ASC`,
       args: [echo.id, startOfDay.getTime()],
     });
     const totalResult = await db.execute({

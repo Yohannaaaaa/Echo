@@ -16,6 +16,7 @@ type Hop = {
   received_at: number;
   reply_note: string | null;
   reveal_choice: 'pending' | 'revealed' | 'mystery';
+  recipient_pseudo: string | null;
 };
 
 type Echo = {
@@ -126,7 +127,9 @@ export default function JourneyPage() {
                 </div>
                 {!hop.is_origin && (
                   <div className="mt-0.5 text-xs text-white/40">
-                    {hop.reveal_choice === 'revealed' ? '👤 identité révélée' : '🌑 reste un mystère'}
+                    {hop.reveal_choice === 'revealed'
+                      ? `👤 ${hop.recipient_pseudo ?? 'identité révélée'}`
+                      : '🌑 reste un mystère'}
                     {hop.is_bot ? '' : ' · personne réelle'}
                   </div>
                 )}

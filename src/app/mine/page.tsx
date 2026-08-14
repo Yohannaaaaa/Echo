@@ -12,6 +12,7 @@ type Hop = {
   received_at: number;
   reply_note: string | null;
   reveal_choice: 'pending' | 'revealed' | 'mystery';
+  recipient_pseudo: string | null;
 };
 
 type Echo = {
@@ -86,6 +87,7 @@ export default function MinePage() {
                         <>
                           <span>👤</span>
                           <span>
+                            {hop.recipient_pseudo ? `${hop.recipient_pseudo} · ` : ''}
                             {flagFor(hop.country_code)} {hop.city}
                           </span>
                         </>

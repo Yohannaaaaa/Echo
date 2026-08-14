@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { randomUUID as uuidv4 } from 'crypto';
 import { getDb } from './db';
 import { detectGeoFromHeaders } from './geo-server';
+import { hashPassword, verifyPassword } from './password';
 
 export const IDENTITY_COOKIE = 'echo_uid';
 const ONE_YEAR = 60 * 60 * 24 * 365;
@@ -11,7 +12,22 @@ export type CurrentUser = {
   city: string | null;
   countryCode: string | null;
   recoveryCode: string;
+  email: string | null;
+  pseudo: string | null;
 };
+
+const USER_COLUMNS = `id, city, country_code as countryCode, recovery_code as recoveryCode, email, pseudo`;
+
+function rowToUser(row: Record<string, unknown>): CurrentUser {
+  return {
+    id: row.id as string,
+    city: row.city as string | null,
+    countryCode: row.countryCode as string | null,
+    recoveryCode: row.recoveryCode as string,
+    email: (row.email as string | null) ?? null,
+    pseudo: (row.pseudo as string | null) ?? null,
+  };
+}
 
 // Avoids ambiguous characters (0/O, 1/I/L) so codes are easy to read and retype.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -87,18 +103,13 @@ export async function ensureIdentity(): Promise<CurrentUser> {
 
   if (existing) {
     const result = await db.execute({
-      sql: 'SELECT id, city, country_code as countryCode, recovery_code as recoveryCode FROM users WHERE id = ?',
+      sql: `SELECT ${USER_COLUMNS} FROM users WHERE id = ?`,
       args: [existing],
     });
     const row = result.rows[0];
     if (row) {
       const recoveryCode = (row.recoveryCode as string | null) ?? (await backfillRecoveryCode(db, row.id as string));
-      return {
-        id: row.id as string,
-        city: row.city as string | null,
-        countryCode: row.countryCode as string | null,
-        recoveryCode,
-      };
+      return rowToUser({ ...row, recoveryCode });
     }
   }
 
@@ -106,7 +117,7 @@ export async function ensureIdentity(): Promise<CurrentUser> {
   const geo = await detectGeoFromHeaders();
   const recoveryCode = await insertUserWithRecoveryCode(db, id, geo.city, geo.countryCode);
   store.set(IDENTITY_COOKIE, id, { maxAge: ONE_YEAR, path: '/', sameSite: 'lax' });
-  return { id, city: geo.city, countryCode: geo.countryCode, recoveryCode };
+  return { id, city: geo.city, countryCode: geo.countryCode, recoveryCode, email: null, pseudo: null };
 }
 
 export async function setUserCity(userId: string, city: string, countryCode: string) {
@@ -114,6 +125,14 @@ export async function setUserCity(userId: string, city: string, countryCode: str
   await db.execute({
     sql: 'UPDATE users SET city = ?, country_code = ? WHERE id = ?',
     args: [city, countryCode, userId],
+  });
+}
+
+export async function setPseudo(userId: string, pseudo: string) {
+  const db = await getDb();
+  await db.execute({
+    sql: 'UPDATE users SET pseudo = ? WHERE id = ?',
+    args: [pseudo, userId],
   });
 }
 
@@ -126,7 +145,7 @@ export async function restoreIdentity(rawCode: string): Promise<CurrentUser | nu
   if (!code) return null;
   const db = await getDb();
   const result = await db.execute({
-    sql: 'SELECT id, city, country_code as countryCode, recovery_code as recoveryCode FROM users WHERE recovery_code = ?',
+    sql: `SELECT ${USER_COLUMNS} FROM users WHERE recovery_code = ?`,
     args: [code],
   });
   const row = result.rows[0];
@@ -134,10 +153,55 @@ export async function restoreIdentity(rawCode: string): Promise<CurrentUser | nu
 
   const store = await cookies();
   store.set(IDENTITY_COOKIE, row.id as string, { maxAge: ONE_YEAR, path: '/', sameSite: 'lax' });
-  return {
-    id: row.id as string,
-    city: row.city as string | null,
-    countryCode: row.countryCode as string | null,
-    recoveryCode: row.recoveryCode as string,
-  };
+  return rowToUser(row);
+}
+
+/**
+ * Attaches an email + password to the CURRENT anonymous identity, so it can
+ * also be recovered by logging in (in addition to the recovery code). Never
+ * creates a separate account — the existing echoes stay attached.
+ */
+export async function setCredentials(
+  userId: string,
+  rawEmail: string,
+  password: string,
+): Promise<{ ok: true; user: CurrentUser } | { ok: false; error: string }> {
+  const email = rawEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'Adresse email invalide.' };
+  }
+  if (password.length < 8) {
+    return { ok: false, error: 'Le mot de passe doit faire au moins 8 caractères.' };
+  }
+
+  const db = await getDb();
+  const passwordHash = hashPassword(password);
+  try {
+    await db.execute({
+      sql: 'UPDATE users SET email = ?, password_hash = ? WHERE id = ?',
+      args: [email, passwordHash, userId],
+    });
+  } catch (err) {
+    if (String(err).includes('UNIQUE')) return { ok: false, error: 'Cet email est déjà utilisé.' };
+    throw err;
+  }
+
+  const result = await db.execute({ sql: `SELECT ${USER_COLUMNS} FROM users WHERE id = ?`, args: [userId] });
+  return { ok: true, user: rowToUser(result.rows[0]) };
+}
+
+export async function loginWithCredentials(rawEmail: string, password: string): Promise<CurrentUser | null> {
+  const email = rawEmail.trim().toLowerCase();
+  const db = await getDb();
+  const result = await db.execute({
+    sql: `SELECT ${USER_COLUMNS}, password_hash as passwordHash FROM users WHERE email = ?`,
+    args: [email],
+  });
+  const row = result.rows[0];
+  if (!row || !row.passwordHash) return null;
+  if (!verifyPassword(password, row.passwordHash as string)) return null;
+
+  const store = await cookies();
+  store.set(IDENTITY_COOKIE, row.id as string, { maxAge: ONE_YEAR, path: '/', sameSite: 'lax' });
+  return rowToUser(row);
 }

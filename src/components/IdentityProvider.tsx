@@ -7,7 +7,11 @@ export type IdentityUser = {
   city: string | null;
   countryCode: string | null;
   recoveryCode: string;
+  email: string | null;
+  pseudo: string | null;
 };
+
+type AuthResult = { ok: true } | { ok: false; error: string };
 
 type Ctx = {
   user: IdentityUser | null;
@@ -21,9 +25,22 @@ type Ctx = {
   openIdentityModal: () => void;
   closeIdentityModal: () => void;
   restore: (code: string) => Promise<boolean>;
+  signup: (email: string, password: string) => Promise<AuthResult>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  setPseudo: (pseudo: string) => Promise<AuthResult>;
 };
 
 const IdentityContext = createContext<Ctx | null>(null);
+
+async function postJson(url: string, body: unknown): Promise<{ res: Response; data: any }> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { res, data };
+}
 
 export function IdentityProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<IdentityUser | null>(null);
@@ -39,28 +56,45 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setCity = useCallback(async (city: string) => {
-    const res = await fetch('/api/me/city', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ city }),
-    });
-    const data = await res.json();
+    const { data } = await postJson('/api/me/city', { city });
     if (data.user) setUser(data.user);
     setCityPickerOpen(false);
   }, []);
 
   const restore = useCallback(async (code: string) => {
-    const res = await fetch('/api/me/restore', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-    const data = await res.json();
+    const { res, data } = await postJson('/api/me/restore', { code });
     if (res.ok && data.user) {
       setUser(data.user);
       return true;
     }
     return false;
+  }, []);
+
+  const signup = useCallback(async (email: string, password: string): Promise<AuthResult> => {
+    const { res, data } = await postJson('/api/auth/signup', { email, password });
+    if (res.ok && data.user) {
+      setUser(data.user);
+      return { ok: true };
+    }
+    return { ok: false, error: data.error ?? 'Erreur inconnue.' };
+  }, []);
+
+  const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
+    const { res, data } = await postJson('/api/auth/login', { email, password });
+    if (res.ok && data.user) {
+      setUser(data.user);
+      return { ok: true };
+    }
+    return { ok: false, error: data.error ?? 'Erreur inconnue.' };
+  }, []);
+
+  const setPseudo = useCallback(async (pseudo: string): Promise<AuthResult> => {
+    const { res, data } = await postJson('/api/me/pseudo', { pseudo });
+    if (res.ok && data.user) {
+      setUser(data.user);
+      return { ok: true };
+    }
+    return { ok: false, error: data.error ?? 'Erreur inconnue.' };
   }, []);
 
   useEffect(() => {
@@ -81,6 +115,9 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
         openIdentityModal: () => setIdentityModalOpen(true),
         closeIdentityModal: () => setIdentityModalOpen(false),
         restore,
+        signup,
+        login,
+        setPseudo,
       }}
     >
       {children}
