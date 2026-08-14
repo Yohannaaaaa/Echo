@@ -59,7 +59,7 @@ export default function IdentityModal() {
   }
 
   async function handleSignup() {
-    if (!email.trim() || !password) return;
+    if (!pseudoInput.trim() || !email.trim() || !password) return;
     setBusy(true);
     setError(null);
     const result = await signup(email, password);
@@ -67,12 +67,10 @@ export default function IdentityModal() {
       setBusy(false);
       return setError(result.error);
     }
-    if (pseudoInput.trim()) {
-      const pseudoResult = await setPseudo(pseudoInput);
-      if (!pseudoResult.ok) {
-        setBusy(false);
-        return setError(pseudoResult.error);
-      }
+    const pseudoResult = await setPseudo(pseudoInput);
+    if (!pseudoResult.ok) {
+      setBusy(false);
+      return setError(pseudoResult.error);
     }
     setBusy(false);
     reset();
@@ -202,7 +200,7 @@ export default function IdentityModal() {
             <input
               value={pseudoInput}
               onChange={(e) => setPseudoInput(e.target.value.slice(0, 24))}
-              placeholder="Pseudo (optionnel)"
+              placeholder="Pseudo"
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
             />
             <input
@@ -221,7 +219,7 @@ export default function IdentityModal() {
             />
             {error && <p className="text-sm text-red-400">{error}</p>}
             <button
-              disabled={!email.trim() || !password || busy}
+              disabled={!pseudoInput.trim() || !email.trim() || !password || busy}
               onClick={handleSignup}
               className="btn-primary w-full py-3.5 disabled:opacity-50"
             >
