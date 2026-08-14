@@ -63,8 +63,18 @@ export default function IdentityModal() {
     setBusy(true);
     setError(null);
     const result = await signup(email, password);
+    if (!result.ok) {
+      setBusy(false);
+      return setError(result.error);
+    }
+    if (pseudoInput.trim()) {
+      const pseudoResult = await setPseudo(pseudoInput);
+      if (!pseudoResult.ok) {
+        setBusy(false);
+        return setError(pseudoResult.error);
+      }
+    }
     setBusy(false);
-    if (!result.ok) return setError(result.error);
     reset();
   }
 
@@ -126,26 +136,27 @@ export default function IdentityModal() {
             </button>
             <p className="text-center text-xs text-white/30">{copied ? 'Copié !' : 'Touche pour copier'}</p>
 
-            <div className="space-y-2 pt-2 border-t border-white/10">
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm text-white/60">
-                  Pseudo {user.pseudo ? <span className="text-white">· {user.pseudo}</span> : ''}
-                </span>
-                <button onClick={() => setMode('pseudo')} className="text-xs underline underline-offset-2 text-white/50">
-                  {user.pseudo ? 'modifier' : 'en choisir un'}
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-white/60">
-                  Email {user.email ? <span className="text-white">· {user.email}</span> : ''}
-                </span>
-                {!user.email && (
-                  <button onClick={() => setMode('password')} className="text-xs underline underline-offset-2 text-white/50">
-                    en ajouter un
+            {user.email ? (
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-sm text-white/60">
+                    Pseudo {user.pseudo ? <span className="text-white">· {user.pseudo}</span> : ''}
+                  </span>
+                  <button onClick={() => setMode('pseudo')} className="text-xs underline underline-offset-2 text-white/50">
+                    {user.pseudo ? 'modifier' : 'en choisir un'}
                   </button>
-                )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-white/60">
+                    Compte <span className="text-white">· {user.email}</span>
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <button onClick={() => setMode('password')} className="btn-ghost w-full py-3 text-sm">
+                Créer un compte (pseudo + email + mot de passe)
+              </button>
+            )}
 
             <div className="flex flex-col gap-2 pt-2">
               <button onClick={() => setMode('restoreCode')} className="btn-ghost w-full py-3 text-sm">
@@ -183,10 +194,17 @@ export default function IdentityModal() {
 
         {mode === 'password' && (
           <>
-            <h2 className="text-xl font-semibold">Ajouter un email + mot de passe</h2>
+            <h2 className="text-xl font-semibold">Créer un compte</h2>
             <p className="text-sm text-white/60">
-              Toujours pas de profil public — juste un second moyen de retrouver tes échos, en plus du code.
+              Toujours pas de profil public — juste un second moyen de retrouver tes échos, en plus du code. Le
+              pseudo ne s&apos;affiche que si tu choisis de te révéler à quelqu&apos;un.
             </p>
+            <input
+              value={pseudoInput}
+              onChange={(e) => setPseudoInput(e.target.value.slice(0, 24))}
+              placeholder="Pseudo (optionnel)"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
+            />
             <input
               type="email"
               value={email}
@@ -207,7 +225,7 @@ export default function IdentityModal() {
               onClick={handleSignup}
               className="btn-primary w-full py-3.5 disabled:opacity-50"
             >
-              {busy ? 'Enregistrement…' : 'Enregistrer'}
+              {busy ? 'Création…' : 'Créer le compte'}
             </button>
             <button onClick={() => setMode('view')} className="w-full text-center text-xs text-white/40 underline underline-offset-2">
               Retour
