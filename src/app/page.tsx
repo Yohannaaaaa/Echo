@@ -42,7 +42,7 @@ export default function HomePage() {
           href="/send"
           className="btn-primary flex items-center justify-center gap-2 py-4 text-base shadow-lg shadow-echo-500/20"
         >
-          🎵 SEND ECHO
+          {t.send.sendButton}
         </Link>
 
         <div className="grid grid-cols-2 gap-3 pt-2">
