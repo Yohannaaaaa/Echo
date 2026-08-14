@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useLanguage } from './LanguageProvider';
 
 export default function AboutButton() {
   const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <>
@@ -11,7 +13,7 @@ export default function AboutButton() {
         onClick={() => setOpen(true)}
         className="mt-3 text-xs text-white/40 underline underline-offset-2 hover:text-white/60"
       >
-        ℹ️ Pourquoi cette appli, et pourquoi c&apos;est anonyme
+        {t.about.trigger}
       </button>
 
       {open && (
@@ -22,29 +24,25 @@ export default function AboutButton() {
               <button
                 onClick={() => setOpen(false)}
                 className="text-sm text-white/40 hover:text-white/70"
-                aria-label="Fermer"
+                aria-label={t.about.close}
               >
                 ✕
               </button>
             </div>
 
-            <h2 className="text-xl font-semibold">Le but d&apos;ECHO</h2>
-            <p className="text-sm text-white/70 leading-relaxed">
-              Tu ne publies jamais rien directement. Tu vis un moment — une chanson, une heure, une humeur — et
-              l&apos;appli en fait un <span className="text-white">écho</span> : un fragment envoyé à un inconnu,
-              quelque part dans le monde. Pas de fil d&apos;actualité, pas de likes, pas de mise en scène.
-            </p>
+            <h2 className="text-xl font-semibold">{t.about.title}</h2>
+            <p className="text-sm text-white/70 leading-relaxed">{t.about.body}</p>
 
-            <h3 className="text-sm font-semibold text-white/90">C&apos;est anonyme, vraiment</h3>
+            <h3 className="text-sm font-semibold text-white/90">{t.about.anonymousTitle}</h3>
             <ul className="space-y-2 text-sm text-white/60 leading-relaxed">
-              <li>• Aucun profil, aucun pseudo, aucune photo. Personne ne voit qui a envoyé un écho.</li>
-              <li>• Ton identité tient dans un cookie, sans profil visible par les autres. Un compte (email + mot de passe) reste optionnel, juste pour la retrouver ailleurs.</li>
-              <li>• Quand quelqu&apos;un reçoit ton écho, c&apos;est <span className="text-white">lui</span> qui choisit de rester un mystère 🌑 ou de se révéler 👤 — jamais l&apos;inverse.</li>
-              <li>• Ta ville est détectée pour situer le voyage de l&apos;écho sur la carte, jamais ton adresse précise — et tu peux la changer ou la masquer à tout moment.</li>
+              <li>• {t.about.point1}</li>
+              <li>• {t.about.point2}</li>
+              <li>• {t.about.point3}</li>
+              <li>• {t.about.point4}</li>
             </ul>
 
             <button onClick={() => setOpen(false)} className="btn-primary w-full py-3 mt-2">
-              Compris
+              {t.about.gotIt}
             </button>
           </div>
         </div>

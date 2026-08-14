@@ -3,12 +3,14 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useIdentity } from '@/components/IdentityProvider';
+import { useLanguage } from '@/components/LanguageProvider';
 
 function ResetForm() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get('token') ?? '';
   const { refresh } = useIdentity();
+  const { t } = useLanguage();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -17,8 +19,8 @@ function ResetForm() {
   const [done, setDone] = useState(false);
 
   async function submit() {
-    if (password.length < 8) return setError('Le mot de passe doit faire au moins 8 caractères.');
-    if (password !== confirm) return setError('Les deux mots de passe ne correspondent pas.');
+    if (password.length < 8) return setError(t.reset.errorTooShort);
+    if (password !== confirm) return setError(t.reset.errorMismatch);
     setBusy(true);
     setError(null);
     const res = await fetch('/api/auth/reset', {
@@ -28,7 +30,7 @@ function ResetForm() {
     });
     const data = await res.json();
     setBusy(false);
-    if (!res.ok) return setError(data.error ?? 'Erreur inconnue.');
+    if (!res.ok) return setError(data.error ?? t.reset.errorUnknown);
     await refresh();
     setDone(true);
   }
@@ -37,7 +39,7 @@ function ResetForm() {
     return (
       <main className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
         <div className="mb-4 text-4xl">🔗</div>
-        <p className="text-white/60">Lien invalide. Refais une demande de réinitialisation depuis l&apos;app.</p>
+        <p className="text-white/60">{t.reset.invalidLink}</p>
       </main>
     );
   }
@@ -46,10 +48,10 @@ function ResetForm() {
     return (
       <main className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
         <div className="mb-4 text-4xl">✅</div>
-        <h1 className="text-xl font-semibold">Mot de passe changé</h1>
-        <p className="mt-2 text-white/60">Tu es connecté(e) sur cet appareil.</p>
+        <h1 className="text-xl font-semibold">{t.reset.passwordChanged}</h1>
+        <p className="mt-2 text-white/60">{t.reset.connectedOnDevice}</p>
         <button onClick={() => router.push('/')} className="btn-primary mt-6 px-6 py-3">
-          Retour à l&apos;accueil
+          {t.reset.backHome}
         </button>
       </main>
     );
@@ -57,22 +59,22 @@ function ResetForm() {
 
   return (
     <main className="px-5 pt-14">
-      <h1 className="text-xl font-semibold">Nouveau mot de passe</h1>
-      <p className="mt-2 text-sm text-white/60">Choisis un nouveau mot de passe pour ton identité ECHO.</p>
+      <h1 className="text-xl font-semibold">{t.reset.newPasswordTitle}</h1>
+      <p className="mt-2 text-sm text-white/60">{t.reset.newPasswordExplain}</p>
 
       <div className="mt-6 space-y-3">
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Nouveau mot de passe (8 caractères min.)"
+          placeholder={t.reset.newPasswordPlaceholder}
           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
         />
         <input
           type="password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          placeholder="Confirme le mot de passe"
+          placeholder={t.reset.confirmPasswordPlaceholder}
           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
         />
         {error && <p className="text-sm text-red-400">{error}</p>}
@@ -81,7 +83,7 @@ function ResetForm() {
           onClick={submit}
           className="btn-primary w-full py-3.5 disabled:opacity-50"
         >
-          {busy ? 'Enregistrement…' : 'Changer le mot de passe'}
+          {busy ? t.reset.saving : t.reset.changePassword}
         </button>
       </div>
     </main>

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { moodEmoji } from '@/lib/cities';
 import { flagFromCountryCode as flagFor } from '@/lib/geo';
+import { useLanguage } from '@/components/LanguageProvider';
+import { localeTag } from '@/lib/i18n/languages';
 
 type Hop = {
   id: string;
@@ -57,6 +59,7 @@ function buildBranches(hops: Hop[]): Hop[][] {
 
 export default function JourneyPage() {
   const params = useParams<{ id: string }>();
+  const { t, lang } = useLanguage();
   const [echo, setEcho] = useState<Echo | null>(null);
   const [hops, setHops] = useState<Hop[] | null>(null);
 
@@ -77,7 +80,7 @@ export default function JourneyPage() {
   if (!echo || !hops) {
     return (
       <main className="px-5 pt-10">
-        <p className="text-sm text-white/40">Chargement du voyage…</p>
+        <p className="text-sm text-white/40">{t.journey.loading}</p>
       </main>
     );
   }
@@ -88,14 +91,14 @@ export default function JourneyPage() {
   return (
     <main className="px-5 pt-10">
       <div className="mb-1 text-xs uppercase tracking-widest text-white/30">
-        Écho #{echo.id.slice(0, 6).toUpperCase()}
+        {t.journey.echoLabel(echo.id.slice(0, 6).toUpperCase())}
       </div>
       <h1 className="text-lg font-semibold">
         {echo.song_title}
         {echo.song_artist ? ` — ${echo.song_artist}` : ''}
       </h1>
       <p className="mt-1 text-sm text-white/50">
-        {moodEmoji(echo.mood)} Envoyé depuis {flagFor(echo.origin_country_code)} {echo.origin_city}
+        {moodEmoji(echo.mood)} {t.journey.sentFrom} {flagFor(echo.origin_country_code)} {echo.origin_city}
       </p>
       {echo.song_url && (
         <a
@@ -104,13 +107,11 @@ export default function JourneyPage() {
           rel="noopener noreferrer"
           className="mt-1 inline-flex items-center gap-1 text-xs text-echo-400 underline underline-offset-2"
         >
-          🔗 Écouter la chanson
+          {t.journey.listenLink}
         </a>
       )}
       <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs text-white/40">
-        {uniqueTravelers === 0
-          ? "Cet écho n'a pas encore été découvert. Le monde dort encore."
-          : `Découvert par ${uniqueTravelers} personne${uniqueTravelers > 1 ? 's' : ''} jusqu'ici.`}
+        {uniqueTravelers === 0 ? t.journey.notDiscovered : t.journey.discoveredBy(uniqueTravelers)}
       </p>
 
       <div className="mt-8 space-y-8">
@@ -131,22 +132,24 @@ export default function JourneyPage() {
                     {flagFor(hop.country_code)} {hop.city}
                   </span>
                   {hop.is_origin ? (
-                    <span className="ml-2 text-xs text-glow-400">point de départ</span>
+                    <span className="ml-2 text-xs text-glow-400">{t.journey.startingPoint}</span>
                   ) : (
-                    <span className="ml-2 text-xs text-white/30">{new Date(hop.received_at).toLocaleString('fr-FR')}</span>
+                    <span className="ml-2 text-xs text-white/30">
+                      {new Date(hop.received_at).toLocaleString(localeTag(lang))}
+                    </span>
                   )}
                 </div>
                 {!hop.is_origin && (
                   <div className="mt-0.5 text-xs text-white/40">
                     {hop.reveal_choice === 'revealed'
-                      ? `👤 ${hop.recipient_pseudo ?? 'identité révélée'}`
-                      : '🌑 reste un mystère'}
-                    {hop.is_bot ? '' : ' · personne réelle'}
+                      ? `👤 ${hop.recipient_pseudo ?? t.journey.identityRevealed}`
+                      : `🌑 ${t.journey.staysMystery}`}
+                    {hop.is_bot ? '' : ` · ${t.journey.realPerson}`}
                   </div>
                 )}
                 {hop.reply_note && <p className="mt-1 text-xs text-white/60">💬 « {hop.reply_note } »</p>}
                 {hi === path.length - 1 && !hop.is_origin && hop.chain_length < 6 && (
-                  <p className="mt-1 text-xs italic text-white/25">…toujours en chemin</p>
+                  <p className="mt-1 text-xs italic text-white/25">{t.journey.stillTraveling}</p>
                 )}
               </div>
             ))}

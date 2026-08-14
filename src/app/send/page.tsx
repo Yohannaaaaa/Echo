@@ -4,10 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MOODS } from '@/lib/cities';
 import { useIdentity } from '@/components/IdentityProvider';
+import { useLanguage } from '@/components/LanguageProvider';
+import { localeTag } from '@/lib/i18n/languages';
+import type { MoodKey } from '@/lib/i18n/translations';
 
 export default function SendPage() {
   const router = useRouter();
   const { user } = useIdentity();
+  const { t, lang } = useLanguage();
   const [songTitle, setSongTitle] = useState('');
   const [songArtist, setSongArtist] = useState('');
   const [songUrl, setSongUrl] = useState('');
@@ -18,7 +22,7 @@ export default function SendPage() {
   const [sentId, setSentId] = useState<string | null>(null);
 
   const now = new Date();
-  const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const time = now.toLocaleTimeString(localeTag(lang), { hour: '2-digit', minute: '2-digit' });
 
   async function handleSend() {
     if (!songTitle.trim() || !mood) return;
@@ -32,7 +36,7 @@ export default function SendPage() {
     const data = await res.json();
     setSending(false);
     if (!res.ok) {
-      setError(data.error ?? 'Une erreur est survenue.');
+      setError(data.error ?? t.send.genericError);
       return;
     }
     setSentId(data.echoId);
@@ -42,13 +46,11 @@ export default function SendPage() {
     return (
       <main className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
         <div className="mb-6 text-5xl animate-pulseSlow">🌙</div>
-        <h1 className="text-xl font-semibold">Ton écho est parti.</h1>
-        <p className="mt-3 text-white/60">
-          Quelqu&apos;un, quelque part, va découvrir qu&apos;à {time} tu écoutais &laquo; {songTitle} &raquo;.
-        </p>
+        <h1 className="text-xl font-semibold">{t.send.sentTitle}</h1>
+        <p className="mt-3 text-white/60">{t.send.sentBody(time, songTitle)}</p>
         <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
           <button className="btn-primary py-3" onClick={() => router.push(`/journey/${sentId}`)}>
-            Suivre son voyage
+            {t.send.followJourney}
           </button>
           <button
             className="btn-ghost py-3"
@@ -61,7 +63,7 @@ export default function SendPage() {
               setNote('');
             }}
           >
-            Envoyer un autre écho
+            {t.send.sendAnother}
           </button>
         </div>
       </main>
@@ -71,7 +73,7 @@ export default function SendPage() {
   return (
     <main className="px-5 pt-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Nouvel écho</h1>
+        <h1 className="text-xl font-semibold">{t.send.newEcho}</h1>
         <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-white/50">
           {time} {user?.city ? `· ${user.city}` : ''}
         </span>
@@ -79,30 +81,30 @@ export default function SendPage() {
 
       <div className="space-y-5">
         <div>
-          <label className="mb-1.5 block text-sm text-white/60">Qu&apos;écoutes-tu là, maintenant ?</label>
+          <label className="mb-1.5 block text-sm text-white/60">{t.send.listeningPrompt}</label>
           <input
             value={songTitle}
             onChange={(e) => setSongTitle(e.target.value)}
-            placeholder="Titre de la chanson"
+            placeholder={t.send.titlePlaceholder}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
           />
           <input
             value={songArtist}
             onChange={(e) => setSongArtist(e.target.value)}
-            placeholder="Artiste (optionnel)"
+            placeholder={t.send.artistPlaceholder}
             className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
           />
           <input
             type="url"
             value={songUrl}
             onChange={(e) => setSongUrl(e.target.value)}
-            placeholder="Lien vers la chanson — Spotify, YouTube… (optionnel)"
+            placeholder={t.send.urlPlaceholder}
             className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm text-white/60">Ton humeur, là, maintenant</label>
+          <label className="mb-1.5 block text-sm text-white/60">{t.send.moodPrompt}</label>
           <div className="grid grid-cols-4 gap-2">
             {MOODS.map((m) => (
               <button
@@ -115,18 +117,18 @@ export default function SendPage() {
                 }`}
               >
                 <span className="text-lg">{m.emoji}</span>
-                {m.label}
+                {t.moods[m.key as MoodKey]}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm text-white/60">Pourquoi ? (optionnel)</label>
+          <label className="mb-1.5 block text-sm text-white/60">{t.send.whyPrompt}</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value.slice(0, 280))}
-            placeholder="Parce que je n'arrivais pas à dormir…"
+            placeholder={t.send.whyPlaceholder}
             rows={3}
             className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
           />
@@ -140,11 +142,9 @@ export default function SendPage() {
           onClick={handleSend}
           className="btn-primary flex w-full items-center justify-center gap-2 py-4"
         >
-          {sending ? 'Envoi…' : '🎵 SEND ECHO'}
+          {sending ? t.send.sending : t.send.sendButton}
         </button>
-        <p className="text-center text-xs text-white/30">
-          Personne ne verra ton profil. Juste ce moment, envoyé à quelqu&apos;un, quelque part.
-        </p>
+        <p className="text-center text-xs text-white/30">{t.send.privacyNote}</p>
       </div>
     </main>
   );

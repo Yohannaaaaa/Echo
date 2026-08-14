@@ -3,21 +3,24 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import EchoMark from './EchoMark';
-
-const ITEMS = [
-  { href: '/', label: 'Accueil', icon: null },
-  { href: '/send', label: 'Envoyer', icon: '🎵' },
-  { href: '/inbox', label: 'Reçus', icon: '📥' },
-  { href: '/mine', label: 'Last Echo', icon: '🌑' },
-  { href: '/global', label: 'Global', icon: '🌍' },
-];
+import { useLanguage } from './LanguageProvider';
 
 export default function TopNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const items = [
+    { href: '/', label: t.nav.home, icon: null },
+    { href: '/send', label: t.nav.send, icon: '🎵' },
+    { href: '/inbox', label: t.nav.inbox, icon: '📥' },
+    { href: '/mine', label: t.nav.mine, icon: '🌑' },
+    { href: '/global', label: t.nav.global, icon: '🌍' },
+  ];
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 border-b border-white/10 bg-night-950/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-md items-stretch justify-between px-2">
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const active = pathname === item.href;
           return (
             <Link

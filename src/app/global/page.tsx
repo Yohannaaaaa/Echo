@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { flagFromCountryCode as flagFor } from '@/lib/geo';
+import { useLanguage } from '@/components/LanguageProvider';
 
 type Question = { id: string; question_date: string; text: string };
 type FeedItem = { city: string; countryCode: string; text: string; createdAt: number; isBot: number };
@@ -9,6 +10,7 @@ type FeedItem = { city: string; countryCode: string; text: string; createdAt: nu
 const TIMER_SECONDS = 30;
 
 export default function GlobalPage() {
+  const { t } = useLanguage();
   const [question, setQuestion] = useState<Question | null>(null);
   const [responded, setResponded] = useState(false);
   const [feed, setFeed] = useState<FeedItem[]>([]);
@@ -57,7 +59,7 @@ export default function GlobalPage() {
     const data = await res.json();
     setSubmitting(false);
     if (!res.ok) {
-      setError(data.error ?? 'Erreur.');
+      setError(data.error ?? t.global.genericError);
       return;
     }
     setResponded(true);
@@ -67,20 +69,20 @@ export default function GlobalPage() {
   if (!question) {
     return (
       <main className="px-5 pt-10">
-        <p className="text-sm text-white/40">Chargement de la question du jour…</p>
+        <p className="text-sm text-white/40">{t.global.loadingQuestion}</p>
       </main>
     );
   }
 
   return (
     <main className="px-5 pt-10">
-      <div className="mb-1 text-xs uppercase tracking-widest text-white/30">Global Echo · aujourd&apos;hui</div>
+      <div className="mb-1 text-xs uppercase tracking-widest text-white/30">{t.global.eyebrow}</div>
       <h1 className="text-xl font-semibold leading-snug">{question.text}</h1>
 
       {!responded && !expired && (
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs text-white/40">Tu as 30 secondes.</span>
+            <span className="text-xs text-white/40">{t.global.youHave30s}</span>
             <span className={`text-sm font-mono ${secondsLeft <= 10 ? 'text-red-400' : 'text-white/60'}`}>
               0:{secondsLeft.toString().padStart(2, '0')}
             </span>
@@ -95,7 +97,7 @@ export default function GlobalPage() {
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value.slice(0, 240))}
-            placeholder="Réponds honnêtement, personne ne saura que c'est toi…"
+            placeholder={t.global.answerPlaceholder}
             rows={4}
             className="mt-4 w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
           />
@@ -105,7 +107,7 @@ export default function GlobalPage() {
             onClick={submit}
             className="btn-primary mt-3 w-full py-3.5"
           >
-            {submitting ? 'Envoi…' : 'Envoyer dans le monde'}
+            {submitting ? t.global.sending : t.global.sendToWorld}
           </button>
         </div>
       )}
@@ -113,15 +115,13 @@ export default function GlobalPage() {
       {expired && !responded && (
         <div className="card mt-6 p-6 text-center">
           <div className="mb-2 text-3xl">⏳</div>
-          <p className="text-sm text-white/60">Temps écoulé pour aujourd&apos;hui. Reviens demain.</p>
+          <p className="text-sm text-white/60">{t.global.timeUp}</p>
         </div>
       )}
 
       {responded && (
         <>
-          <p className="mt-6 mb-3 text-sm text-white/40">
-            Ta réponse est mêlée à celles du monde entier. Fragments, sans followers, sans influenceurs :
-          </p>
+          <p className="mt-6 mb-3 text-sm text-white/40">{t.global.mixedIntro}</p>
           <div className="space-y-3">
             {feed.map((item, i) => (
               <div key={i} className="card p-4">

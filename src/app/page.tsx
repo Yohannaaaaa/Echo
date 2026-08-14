@@ -3,19 +3,22 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useIdentity } from '@/components/IdentityProvider';
+import { useLanguage } from '@/components/LanguageProvider';
+import { localeTag } from '@/lib/i18n/languages';
 import EchoMark from '@/components/EchoMark';
 import AboutButton from '@/components/AboutButton';
 
 export default function HomePage() {
   const { user, openCityPicker, openIdentityModal } = useIdentity();
+  const { t, lang } = useLanguage();
   const [time, setTime] = useState<string | null>(null);
 
   useEffect(() => {
-    const update = () => setTime(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+    const update = () => setTime(new Date().toLocaleTimeString(localeTag(lang), { hour: '2-digit', minute: '2-digit' }));
     update();
     const interval = setInterval(update, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [lang]);
 
   return (
     <main className="px-5 pt-14 pb-6">
@@ -25,11 +28,11 @@ export default function HomePage() {
         </div>
         <h1 className="text-3xl font-bold tracking-tight">ECHO</h1>
         <p className="mt-3 text-white/60 leading-relaxed">
-          Tu ne publies jamais directement.
+          {t.home.tagline1}
           <br />
-          Tu vis un moment. L&apos;appli en fait un écho.
+          {t.home.tagline2}
           <br />
-          Il part dans le monde, sans profil, sans followers.
+          {t.home.tagline3}
         </p>
         <AboutButton />
       </div>
@@ -45,34 +48,34 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-3 pt-2">
           <Link href="/inbox" className="card flex flex-col gap-1 p-4">
             <span className="text-xl">📥</span>
-            <span className="text-sm font-medium">Échos reçus</span>
-            <span className="text-xs text-white/50">Des inconnus, quelque part</span>
+            <span className="text-sm font-medium">{t.home.inboxTitle}</span>
+            <span className="text-xs text-white/50">{t.home.inboxSubtitle}</span>
           </Link>
           <Link href="/mine" className="card flex flex-col gap-1 p-4">
             <span className="text-xl">🌑</span>
-            <span className="text-sm font-medium">Last Echo</span>
-            <span className="text-xs text-white/50">Qui a reçu le tien aujourd&apos;hui</span>
+            <span className="text-sm font-medium">{t.nav.mine}</span>
+            <span className="text-xs text-white/50">{t.home.lastEchoSubtitle}</span>
           </Link>
           <Link href="/global" className="card col-span-2 flex flex-col gap-1 p-4">
             <span className="text-xl">🌍</span>
-            <span className="text-sm font-medium">Global Echo du jour</span>
-            <span className="text-xs text-white/50">Une question. 30 secondes. Le monde entier répond.</span>
+            <span className="text-sm font-medium">{t.home.globalTitle}</span>
+            <span className="text-xs text-white/50">{t.home.globalSubtitle}</span>
           </Link>
         </div>
       </div>
 
       {user?.city && (
         <p className="mt-8 text-center text-xs text-white/30">
-          Tu émets depuis {user.city}{time ? `, il est ${time}` : ''} ·{' '}
+          {t.home.emittingFrom(user.city, time)} ·{' '}
           <button onClick={openCityPicker} className="underline underline-offset-2 hover:text-white/50">
-            changer
+            {t.home.change}
           </button>
         </p>
       )}
       {user && (
         <p className="mt-2 text-center text-xs text-white/30">
           <button onClick={openIdentityModal} className="underline underline-offset-2 hover:text-white/50">
-            🔑 Ton identité / retrouver tes échos
+            {t.home.identityLink}
           </button>
         </p>
       )}

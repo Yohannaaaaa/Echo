@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { moodEmoji } from '@/lib/cities';
+import { useLanguage } from '@/components/LanguageProvider';
+import { localeTag } from '@/lib/i18n/languages';
 
 type InboxItem = {
   hopId: string;
@@ -26,14 +28,15 @@ type InboxItem = {
   fromNote: string | null;
 };
 
-function timeOf(ts: number) {
-  return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
-
 export default function InboxPage() {
+  const { t, lang } = useLanguage();
   const [items, setItems] = useState<InboxItem[] | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+
+  function timeOf(ts: number) {
+    return new Date(ts).toLocaleTimeString(localeTag(lang), { hour: '2-digit', minute: '2-digit' });
+  }
 
   const load = useCallback(async () => {
     const res = await fetch('/api/inbox');
@@ -75,21 +78,18 @@ export default function InboxPage() {
   return (
     <main className="px-5 pt-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Échos reçus</h1>
+        <h1 className="text-xl font-semibold">{t.inbox.title}</h1>
         <button onClick={load} className="btn-ghost px-3 py-1.5 text-xs">
-          ↻ Actualiser
+          {t.inbox.refresh}
         </button>
       </div>
 
-      {items === null && <p className="text-sm text-white/40">Écoute du monde…</p>}
+      {items === null && <p className="text-sm text-white/40">{t.inbox.loading}</p>}
 
       {items?.length === 0 && (
         <div className="card p-6 text-center">
           <div className="mb-3 text-3xl">👂</div>
-          <p className="text-sm text-white/60">
-            Rien pour l&apos;instant. Les échos voyagent lentement — reviens dans quelques instants, ou envoie le
-            tien pour lancer le mouvement.
-          </p>
+          <p className="text-sm text-white/60">{t.inbox.emptyBody}</p>
         </div>
       )}
 
@@ -98,18 +98,18 @@ export default function InboxPage() {
           <div key={item.hopId} className="card p-4">
             <div className="mb-2 flex items-center gap-2 text-xs text-white/40">
               <span>{moodEmoji(item.mood)}</span>
-              <span>Reçu à {timeOf(item.receivedAt)}</span>
+              <span>{t.inbox.receivedAt(timeOf(item.receivedAt))}</span>
               <span>·</span>
-              <span>{item.chainLength - 1} étape{item.chainLength - 1 > 1 ? 's' : ''} parcourue{item.chainLength - 1 > 1 ? 's' : ''}</span>
+              <span>{t.inbox.steps(item.chainLength - 1)}</span>
             </div>
 
             <p className="text-sm leading-relaxed text-white/90">
-              🌙 Quelqu&apos;un, quelque part, écoutait{' '}
+              {t.inbox.someoneListening}{' '}
               <span className="font-medium">
                 « {item.songTitle}
                 {item.songArtist ? ` — ${item.songArtist}` : ''} »
               </span>{' '}
-              à {timeOf(item.sentAt)}.
+              {t.inbox.at(timeOf(item.sentAt))}
             </p>
 
             {item.songUrl && (
@@ -119,7 +119,7 @@ export default function InboxPage() {
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1 text-xs text-echo-400 underline underline-offset-2"
               >
-                🔗 Écouter la chanson
+                {t.inbox.listenLink}
               </a>
             )}
 
@@ -127,7 +127,7 @@ export default function InboxPage() {
 
             {item.fromNote && (
               <p className="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-white/50">
-                🔁 En chemin, quelqu&apos;un a ajouté : « {item.fromNote} »
+                {t.inbox.onTheWay} « {item.fromNote} »
               </p>
             )}
 
@@ -135,7 +135,7 @@ export default function InboxPage() {
               <input
                 value={replyDrafts[item.hopId] ?? ''}
                 onChange={(e) => setReplyDrafts((d) => ({ ...d, [item.hopId]: e.target.value.slice(0, 280) }))}
-                placeholder="Répondre, et laisser l'écho continuer…"
+                placeholder={t.inbox.replyPlaceholder}
                 className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-white/30 focus:border-echo-500"
               />
               <button
@@ -143,7 +143,7 @@ export default function InboxPage() {
                 onClick={() => sendReply(item.hopId)}
                 className="btn-primary px-4 py-2 text-sm"
               >
-                Envoyer
+                {t.inbox.send}
               </button>
             </div>
 
@@ -156,7 +156,7 @@ export default function InboxPage() {
                     item.revealChoice === 'revealed' ? 'bg-echo-500/20 text-echo-400' : 'bg-white/5 text-white/40'
                   }`}
                 >
-                  👤 Me révéler
+                  {t.inbox.revealMe}
                 </button>
                 <button
                   disabled={busy === item.hopId}
@@ -167,11 +167,11 @@ export default function InboxPage() {
                       : 'bg-white/5 text-white/40'
                   }`}
                 >
-                  🌑 Rester mystère
+                  {t.inbox.stayMystery}
                 </button>
               </div>
               <Link href={`/journey/${item.echoId}`} className="text-xs text-white/40 underline underline-offset-2">
-                Voir le voyage →
+                {t.inbox.seeJourney}
               </Link>
             </div>
           </div>

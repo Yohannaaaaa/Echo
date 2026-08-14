@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { moodEmoji } from '@/lib/cities';
 import { flagFromCountryCode as flagFor } from '@/lib/geo';
+import { useLanguage } from '@/components/LanguageProvider';
+import { localeTag } from '@/lib/i18n/languages';
 
 type Hop = {
   id: string;
@@ -26,6 +28,7 @@ type Echo = {
 type Group = { echo: Echo; hopsToday: Hop[]; totalRecipients: number };
 
 export default function MinePage() {
+  const { t, lang } = useLanguage();
   const [groups, setGroups] = useState<Group[] | null>(null);
 
   const load = useCallback(async () => {
@@ -40,24 +43,22 @@ export default function MinePage() {
     return () => clearInterval(interval);
   }, [load]);
 
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const today = new Date().toLocaleDateString(localeTag(lang), { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <main className="px-5 pt-10">
-      <h1 className="text-xl font-semibold">Last Echo</h1>
+      <h1 className="text-xl font-semibold">{t.mine.title}</h1>
       <p className="mt-1 text-sm capitalize text-white/40">{today}</p>
-      <p className="mt-4 text-sm text-white/60">
-        Voici qui a reçu tes échos aujourd&apos;hui. Chacun a choisi : se révéler, ou rester un mystère.
-      </p>
+      <p className="mt-4 text-sm text-white/60">{t.mine.subtitle}</p>
 
-      {groups === null && <p className="mt-6 text-sm text-white/40">Chargement…</p>}
+      {groups === null && <p className="mt-6 text-sm text-white/40">{t.mine.loading}</p>}
 
       {groups?.length === 0 && (
         <div className="card mt-6 p-6 text-center">
           <div className="mb-3 text-3xl">🎵</div>
-          <p className="text-sm text-white/60">Tu n&apos;as pas encore envoyé d&apos;écho.</p>
+          <p className="text-sm text-white/60">{t.mine.emptyBody}</p>
           <Link href="/send" className="btn-primary mt-4 inline-block px-5 py-2 text-sm">
-            Envoyer ton premier écho
+            {t.mine.sendFirst}
           </Link>
         </div>
       )}
@@ -71,13 +72,13 @@ export default function MinePage() {
                 {echo.song_artist ? ` — ${echo.song_artist}` : ''}
               </p>
               <Link href={`/journey/${echo.id}`} className="text-xs text-white/40 underline underline-offset-2">
-                Voyage →
+                {t.mine.journey}
               </Link>
             </div>
-            <p className="mt-1 text-xs text-white/30">{totalRecipients} personne{totalRecipients > 1 ? 's' : ''} touchée{totalRecipients > 1 ? 's' : ''} au total</p>
+            <p className="mt-1 text-xs text-white/30">{t.mine.totalReached(totalRecipients)}</p>
 
             {hopsToday.length === 0 ? (
-              <p className="mt-3 text-xs italic text-white/30">Personne ne l&apos;a encore reçu aujourd&apos;hui.</p>
+              <p className="mt-3 text-xs italic text-white/30">{t.mine.noneToday}</p>
             ) : (
               <div className="mt-3 space-y-2">
                 {hopsToday.map((hop) => (
@@ -94,12 +95,12 @@ export default function MinePage() {
                       ) : (
                         <>
                           <span>🌑</span>
-                          <span className="text-white/50">Quelqu&apos;un, quelque part</span>
+                          <span className="text-white/50">{t.mine.someoneSomewhere}</span>
                         </>
                       )}
                     </div>
                     <span className="text-xs text-white/30">
-                      {new Date(hop.received_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(hop.received_at).toLocaleTimeString(localeTag(lang), { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 ))}

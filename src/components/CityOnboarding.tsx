@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { CITIES } from '@/lib/cities';
 import { useIdentity } from './IdentityProvider';
+import { useLanguage } from './LanguageProvider';
 
 export default function CityOnboarding() {
   const { user, loading, setCity, cityPickerOpen, closeCityPicker } = useIdentity();
+  const { t } = useLanguage();
   const [saving, setSaving] = useState(false);
 
   if (loading || !user) return null;
@@ -19,21 +21,19 @@ export default function CityOnboarding() {
           <button
             onClick={closeCityPicker}
             className="float-right text-sm text-white/40 hover:text-white/70"
-            aria-label="Fermer"
+            aria-label={t.about.close}
           >
             ✕
           </button>
         )}
         <div className="text-3xl">🌍</div>
-        <h2 className="text-xl font-semibold">
-          {forcedOpen ? "D'où pars ton premier écho ?" : 'Changer de ville'}
-        </h2>
+        <h2 className="text-xl font-semibold">{forcedOpen ? t.cityPicker.firstEchoTitle : t.cityPicker.changeCityTitle}</h2>
         <p className="text-sm text-white/60">
           {forcedOpen
-            ? "Pas de profil, pas de pseudo. Juste une ville, pour savoir où tes échos commencent leur voyage."
+            ? t.cityPicker.firstEchoExplain
             : user.city
-              ? `Ta ville actuelle : ${user.city}. Choisis-en une autre si tu préfères ne pas la partager.`
-              : 'Choisis une ville.'}
+              ? t.cityPicker.currentCity(user.city)
+              : t.cityPicker.chooseCity}
         </p>
         <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
           {CITIES.map((c) => (
