@@ -38,7 +38,7 @@ export default function AboutButton() {
             <h3 className="text-sm font-semibold text-white/90">C&apos;est anonyme, vraiment</h3>
             <ul className="space-y-2 text-sm text-white/60 leading-relaxed">
               <li>• Aucun profil, aucun pseudo, aucune photo. Personne ne voit qui a envoyé un écho.</li>
-              <li>• Pas d&apos;email, pas de mot de passe. Ton identité tient dans un cookie et un code de récupération technique — rien qui te désigne personnellement.</li>
+              <li>• Ton identité tient dans un cookie, sans profil visible par les autres. Un compte (email + mot de passe) reste optionnel, juste pour la retrouver ailleurs.</li>
               <li>• Quand quelqu&apos;un reçoit ton écho, c&apos;est <span className="text-white">lui</span> qui choisit de rester un mystère 🌑 ou de se révéler 👤 — jamais l&apos;inverse.</li>
               <li>• Ta ville est détectée pour situer le voyage de l&apos;écho sur la carte, jamais ton adresse précise — et tu peux la changer ou la masquer à tout moment.</li>
             </ul>

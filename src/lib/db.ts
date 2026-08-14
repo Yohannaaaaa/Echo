@@ -103,7 +103,6 @@ async function ensureSchema(db: Client) {
   // Additive migrations: CREATE TABLE IF NOT EXISTS above won't add columns
   // to a database that already existed before this column was introduced.
   const additiveColumns: Array<[string, string]> = [
-    ['recovery_code', 'TEXT'],
     ['email', 'TEXT'],
     ['password_hash', 'TEXT'],
     ['pseudo', 'TEXT'],
@@ -115,8 +114,15 @@ async function ensureSchema(db: Client) {
       if (!String(err).includes('duplicate column')) throw err;
     }
   }
-  await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_recovery_code ON users(recovery_code)');
   await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+
+  // Recovery codes are retired in favor of email + password only.
+  try {
+    await db.execute('DROP INDEX IF EXISTS idx_users_recovery_code');
+    await db.execute('ALTER TABLE users DROP COLUMN recovery_code');
+  } catch (err) {
+    if (!String(err).includes('no such column')) throw err;
+  }
 }
 
 export async function getDb(): Promise<Client> {

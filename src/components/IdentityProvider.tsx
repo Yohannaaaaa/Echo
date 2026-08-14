@@ -6,7 +6,6 @@ export type IdentityUser = {
   id: string;
   city: string | null;
   countryCode: string | null;
-  recoveryCode: string;
   email: string | null;
   pseudo: string | null;
 };
@@ -24,7 +23,6 @@ type Ctx = {
   identityModalOpen: boolean;
   openIdentityModal: () => void;
   closeIdentityModal: () => void;
-  restore: (code: string) => Promise<boolean>;
   signup: (email: string, password: string) => Promise<AuthResult>;
   login: (email: string, password: string) => Promise<AuthResult>;
   setPseudo: (pseudo: string) => Promise<AuthResult>;
@@ -59,15 +57,6 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
     const { data } = await postJson('/api/me/city', { city });
     if (data.user) setUser(data.user);
     setCityPickerOpen(false);
-  }, []);
-
-  const restore = useCallback(async (code: string) => {
-    const { res, data } = await postJson('/api/me/restore', { code });
-    if (res.ok && data.user) {
-      setUser(data.user);
-      return true;
-    }
-    return false;
   }, []);
 
   const signup = useCallback(async (email: string, password: string): Promise<AuthResult> => {
@@ -114,7 +103,6 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
         identityModalOpen,
         openIdentityModal: () => setIdentityModalOpen(true),
         closeIdentityModal: () => setIdentityModalOpen(false),
-        restore,
         signup,
         login,
         setPseudo,
