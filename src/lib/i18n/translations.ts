@@ -167,7 +167,7 @@ export interface Translations {
 }
 
 const fr: Translations = {
-  nav: { home: 'Accueil', send: 'Envoyer', inbox: 'Reçus', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Accueil', send: 'Envoyer', inbox: 'Reçus', mine: 'Envoyés', global: 'Global' },
   home: {
     tagline1: 'Tu ne publies jamais directement.',
     tagline2: "Tu vis un moment. L'appli en fait un écho.",
@@ -335,7 +335,7 @@ const fr: Translations = {
 };
 
 const en: Translations = {
-  nav: { home: 'Home', send: 'Send', inbox: 'Inbox', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Home', send: 'Send', inbox: 'Inbox', mine: 'Sent', global: 'Global' },
   home: {
     tagline1: "You never post directly.",
     tagline2: 'You live a moment. The app turns it into an echo.',
@@ -505,7 +505,7 @@ const en: Translations = {
 };
 
 const es: Translations = {
-  nav: { home: 'Inicio', send: 'Enviar', inbox: 'Recibidos', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Inicio', send: 'Enviar', inbox: 'Recibidos', mine: 'Enviados', global: 'Global' },
   home: {
     tagline1: 'Nunca publicas directamente.',
     tagline2: 'Vives un momento. La app lo convierte en un eco.',
@@ -674,7 +674,7 @@ const es: Translations = {
 };
 
 const de: Translations = {
-  nav: { home: 'Start', send: 'Senden', inbox: 'Eingang', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Start', send: 'Senden', inbox: 'Eingang', mine: 'Gesendet', global: 'Global' },
   home: {
     tagline1: 'Du veröffentlichst nie direkt.',
     tagline2: 'Du erlebst einen Moment. Die App macht daraus ein Echo.',
@@ -844,7 +844,7 @@ const de: Translations = {
 };
 
 const it: Translations = {
-  nav: { home: 'Home', send: 'Invia', inbox: 'Ricevuti', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Home', send: 'Invia', inbox: 'Ricevuti', mine: 'Inviati', global: 'Global' },
   home: {
     tagline1: 'Non pubblichi mai direttamente.',
     tagline2: "Vivi un momento. L'app lo trasforma in un'eco.",
@@ -1014,7 +1014,7 @@ const it: Translations = {
 };
 
 const nl: Translations = {
-  nav: { home: 'Start', send: 'Versturen', inbox: 'Ontvangen', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Start', send: 'Versturen', inbox: 'Ontvangen', mine: 'Verzonden', global: 'Global' },
   home: {
     tagline1: 'Je post nooit direct.',
     tagline2: 'Je beleeft een moment. De app maakt er een echo van.',
@@ -1183,7 +1183,7 @@ const nl: Translations = {
 };
 
 const pt: Translations = {
-  nav: { home: 'Início', send: 'Enviar', inbox: 'Recebidos', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Início', send: 'Enviar', inbox: 'Recebidos', mine: 'Enviados', global: 'Global' },
   home: {
     tagline1: 'Nunca publicas diretamente.',
     tagline2: 'Vives um momento. A app transforma-o num eco.',
@@ -1351,7 +1351,7 @@ const pt: Translations = {
 };
 
 const ru: Translations = {
-  nav: { home: 'Главная', send: 'Отправить', inbox: 'Входящие', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Главная', send: 'Отправить', inbox: 'Входящие', mine: 'Отправлено', global: 'Global' },
   home: {
     tagline1: 'Ты никогда не публикуешь напрямую.',
     tagline2: 'Ты переживаешь момент. Приложение превращает его в эхо.',
@@ -1518,7 +1518,7 @@ const ru: Translations = {
 };
 
 const tr: Translations = {
-  nav: { home: 'Ana Sayfa', send: 'Gönder', inbox: 'Gelenler', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'Ana Sayfa', send: 'Gönder', inbox: 'Gelenler', mine: 'Gönderilen', global: 'Global' },
   home: {
     tagline1: 'Hiçbir şeyi doğrudan paylaşmazsın.',
     tagline2: 'Bir an yaşarsın. Uygulama onu bir yankıya dönüştürür.',
@@ -1685,7 +1685,7 @@ const tr: Translations = {
 };
 
 const ja: Translations = {
-  nav: { home: 'ホーム', send: '送信', inbox: '受信', mine: 'Last Echo', global: 'Global' },
+  nav: { home: 'ホーム', send: '送信', inbox: '受信', mine: '送信済み', global: 'Global' },
   home: {
     tagline1: '直接投稿することはない。',
     tagline2: 'あなたが過ごした瞬間を、アプリがエコーに変える。',
@@ -1850,7 +1850,7 @@ const ja: Translations = {
 };
 
 const ko: Translations = {
-  nav: { home: '홈', send: '보내기', inbox: '받은 에코', mine: 'Last Echo', global: 'Global' },
+  nav: { home: '홈', send: '보내기', inbox: '받은 에코', mine: '보낸 에코', global: 'Global' },
   home: {
     tagline1: '직접 게시하는 일은 없습니다.',
     tagline2: '당신이 겪은 순간을 앱이 에코로 만듭니다.',
@@ -2015,7 +2015,7 @@ const ko: Translations = {
 };
 
 const zh: Translations = {
-  nav: { home: '首页', send: '发送', inbox: '收件箱', mine: 'Last Echo', global: 'Global' },
+  nav: { home: '首页', send: '发送', inbox: '收件箱', mine: '已发送', global: 'Global' },
   home: {
     tagline1: '你从不直接发布。',
     tagline2: '你经历一个瞬间，应用把它变成一个回声。',
