@@ -19,6 +19,7 @@ type Hop = {
   reply_note: string | null;
   reveal_choice: 'pending' | 'revealed' | 'mystery';
   recipient_pseudo: string | null;
+  isMine: boolean;
 };
 
 type Echo = {
@@ -62,6 +63,8 @@ export default function JourneyPage() {
   const { t, lang } = useLanguage();
   const [echo, setEcho] = useState<Echo | null>(null);
   const [hops, setHops] = useState<Hop[] | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/journey/${params.id}`);
@@ -76,6 +79,20 @@ export default function JourneyPage() {
     const interval = setInterval(load, 9000);
     return () => clearInterval(interval);
   }, [load]);
+
+  async function sendReply(hopId: string) {
+    const note = (replyDrafts[hopId] ?? '').trim();
+    if (!note) return;
+    setBusy(hopId);
+    await fetch('/api/hop/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hopId, note }),
+    });
+    setReplyDrafts((d) => ({ ...d, [hopId]: '' }));
+    await load();
+    setBusy(null);
+  }
 
   if (!echo || !hops) {
     return (
@@ -148,6 +165,25 @@ export default function JourneyPage() {
                   </div>
                 )}
                 {hop.reply_note && <p className="mt-1 text-xs text-white/60">💬 « {hop.reply_note } »</p>}
+                {!hop.is_origin && hop.isMine && !hop.reply_note && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      value={replyDrafts[hop.id] ?? ''}
+                      onChange={(e) =>
+                        setReplyDrafts((d) => ({ ...d, [hop.id]: e.target.value.slice(0, 280) }))
+                      }
+                      placeholder={t.inbox.replyPlaceholder}
+                      className="flex-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-echo-500"
+                    />
+                    <button
+                      disabled={busy === hop.id || !(replyDrafts[hop.id] ?? '').trim()}
+                      onClick={() => sendReply(hop.id)}
+                      className="btn-primary px-3 py-1.5 text-xs"
+                    >
+                      {t.inbox.send}
+                    </button>
+                  </div>
+                )}
                 {hi === path.length - 1 && !hop.is_origin && hop.chain_length < 6 && (
                   <p className="mt-1 text-xs italic text-white/25">{t.journey.stillTraveling}</p>
                 )}
