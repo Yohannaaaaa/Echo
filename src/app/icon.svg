@@ -12,8 +12,10 @@
 
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
 
-  <circle cx="256" cy="256" r="196" fill="none" stroke="url(#mark)" stroke-width="14" opacity="0.22"/>
-  <circle cx="256" cy="256" r="140" fill="none" stroke="url(#mark)" stroke-width="16" opacity="0.45"/>
+  <circle cx="256" cy="256" r="196" fill="none" stroke="url(#mark)" stroke-width="10" opacity="0.22"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="url(#mark)" stroke-width="12" opacity="0.45"/>
+
+  <!-- eclipse core: bright corona ring with a dark center, like an annular eclipse -->
   <circle cx="256" cy="256" r="84" fill="url(#mark)"/>
-  <circle cx="256" cy="256" r="84" fill="none" stroke="#05050a" stroke-width="4" opacity="0.15"/>
+  <circle cx="256" cy="256" r="30" fill="#05050a"/>
 </svg>

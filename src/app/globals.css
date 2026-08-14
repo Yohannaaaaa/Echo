@@ -44,3 +44,37 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
 }
+
+.echo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #7c5cff, #5ee6d0) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  border: 1.5px solid transparent;
+  opacity: 0;
+  animation: echoRipple 3.2s ease-out infinite;
+}
+
+@keyframes echoRipple {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.6;
+    border-width: 3px;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+    border-width: 0.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-ring {
+    animation: none;
+    opacity: 0.25;
+    transform: scale(0.82);
+  }
+}

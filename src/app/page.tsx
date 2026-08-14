@@ -11,7 +11,7 @@ export default function HomePage() {
     <main className="px-5 pt-14 pb-6">
       <div className="relative mb-10 flex flex-col items-center text-center">
         <div className="mb-6">
-          <EchoMark size={112} />
+          <EchoMark size={176} />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">ECHO</h1>
         <p className="mt-3 text-white/60 leading-relaxed">

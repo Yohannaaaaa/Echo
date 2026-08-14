@@ -10,6 +10,7 @@
     <circle cx="80" cy="80" r="76" fill="none" stroke="url(#mark)" stroke-width="5" opacity="0.22"/>
     <circle cx="80" cy="80" r="54" fill="none" stroke="url(#mark)" stroke-width="6" opacity="0.45"/>
     <circle cx="80" cy="80" r="32" fill="url(#mark)"/>
+    <circle cx="80" cy="80" r="12" fill="#05050a"/>
   </g>
 
   <text x="200" y="122" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="96" font-weight="700" letter-spacing="4" fill="#f2f0ff">ECHO</text>
