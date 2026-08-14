@@ -1,0 +1,170 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { moodEmoji } from '@/lib/cities';
+
+type InboxItem = {
+  hopId: string;
+  echoId: string;
+  chainLength: number;
+  receivedAt: number;
+  replyNote: string | null;
+  revealChoice: 'pending' | 'revealed' | 'mystery';
+  city: string;
+  countryCode: string;
+  songTitle: string;
+  songArtist: string | null;
+  mood: string;
+  note: string | null;
+  sentAt: number;
+  originCity: string;
+  originCountryCode: string;
+  fromCity: string | null;
+  fromCountryCode: string | null;
+  fromNote: string | null;
+};
+
+function timeOf(ts: number) {
+  return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+export default function InboxPage() {
+  const [items, setItems] = useState<InboxItem[] | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch('/api/inbox');
+    const data = await res.json();
+    setItems(data.inbox ?? []);
+  }, []);
+
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 9000);
+    return () => clearInterval(interval);
+  }, [load]);
+
+  async function reveal(hopId: string, choice: 'revealed' | 'mystery') {
+    setBusy(hopId);
+    await fetch('/api/hop/reveal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hopId, choice }),
+    });
+    await load();
+    setBusy(null);
+  }
+
+  async function sendReply(hopId: string) {
+    const note = (replyDrafts[hopId] ?? '').trim();
+    if (!note) return;
+    setBusy(hopId);
+    await fetch('/api/hop/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hopId, note }),
+    });
+    setReplyDrafts((d) => ({ ...d, [hopId]: '' }));
+    await load();
+    setBusy(null);
+  }
+
+  return (
+    <main className="px-5 pt-10">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Échos reçus</h1>
+        <button onClick={load} className="btn-ghost px-3 py-1.5 text-xs">
+          ↻ Actualiser
+        </button>
+      </div>
+
+      {items === null && <p className="text-sm text-white/40">Écoute du monde…</p>}
+
+      {items?.length === 0 && (
+        <div className="card p-6 text-center">
+          <div className="mb-3 text-3xl">👂</div>
+          <p className="text-sm text-white/60">
+            Rien pour l&apos;instant. Les échos voyagent lentement — reviens dans quelques instants, ou envoie le
+            tien pour lancer le mouvement.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {items?.map((item) => (
+          <div key={item.hopId} className="card p-4">
+            <div className="mb-2 flex items-center gap-2 text-xs text-white/40">
+              <span>{moodEmoji(item.mood)}</span>
+              <span>Reçu à {timeOf(item.receivedAt)}</span>
+              <span>·</span>
+              <span>{item.chainLength - 1} étape{item.chainLength - 1 > 1 ? 's' : ''} parcourue{item.chainLength - 1 > 1 ? 's' : ''}</span>
+            </div>
+
+            <p className="text-sm leading-relaxed text-white/90">
+              🌙 Quelqu&apos;un, quelque part, écoutait{' '}
+              <span className="font-medium">
+                « {item.songTitle}
+                {item.songArtist ? ` — ${item.songArtist}` : ''} »
+              </span>{' '}
+              à {timeOf(item.sentAt)}.
+            </p>
+
+            {item.note && <p className="mt-2 text-sm text-white/60">💬 « {item.note} »</p>}
+
+            {item.fromNote && (
+              <p className="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-white/50">
+                🔁 En chemin, quelqu&apos;un a ajouté : « {item.fromNote} »
+              </p>
+            )}
+
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                value={replyDrafts[item.hopId] ?? ''}
+                onChange={(e) => setReplyDrafts((d) => ({ ...d, [item.hopId]: e.target.value.slice(0, 280) }))}
+                placeholder="Répondre, et laisser l'écho continuer…"
+                className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-white/30 focus:border-echo-500"
+              />
+              <button
+                disabled={busy === item.hopId || !(replyDrafts[item.hopId] ?? '').trim()}
+                onClick={() => sendReply(item.hopId)}
+                className="btn-primary px-4 py-2 text-sm"
+              >
+                Envoyer
+              </button>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
+              <div className="flex gap-2 text-xs">
+                <button
+                  disabled={busy === item.hopId}
+                  onClick={() => reveal(item.hopId, 'revealed')}
+                  className={`rounded-full px-3 py-1 ${
+                    item.revealChoice === 'revealed' ? 'bg-echo-500/20 text-echo-400' : 'bg-white/5 text-white/40'
+                  }`}
+                >
+                  👤 Me révéler
+                </button>
+                <button
+                  disabled={busy === item.hopId}
+                  onClick={() => reveal(item.hopId, 'mystery')}
+                  className={`rounded-full px-3 py-1 ${
+                    item.revealChoice === 'mystery' || item.revealChoice === 'pending'
+                      ? 'bg-echo-500/20 text-echo-400'
+                      : 'bg-white/5 text-white/40'
+                  }`}
+                >
+                  🌑 Rester mystère
+                </button>
+              </div>
+              <Link href={`/journey/${item.echoId}`} className="text-xs text-white/40 underline underline-offset-2">
+                Voir le voyage →
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}

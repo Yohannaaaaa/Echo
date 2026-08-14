@@ -1,0 +1,143 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { flagFor, moodEmoji } from '@/lib/cities';
+
+type Hop = {
+  id: string;
+  parent_hop_id: string | null;
+  is_origin: number;
+  is_bot: number;
+  chain_length: number;
+  city: string;
+  country_code: string;
+  received_at: number;
+  reply_note: string | null;
+  reveal_choice: 'pending' | 'revealed' | 'mystery';
+};
+
+type Echo = {
+  id: string;
+  song_title: string;
+  song_artist: string | null;
+  mood: string;
+  note: string | null;
+  sent_at: number;
+  origin_city: string;
+  origin_country_code: string;
+};
+
+function buildBranches(hops: Hop[]): Hop[][] {
+  const byParent = new Map<string | null, Hop[]>();
+  for (const h of hops) {
+    const key = h.parent_hop_id;
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key)!.push(h);
+  }
+  const origin = hops.find((h) => h.is_origin);
+  if (!origin) return [];
+
+  const paths: Hop[][] = [];
+  function walk(hop: Hop, trail: Hop[]) {
+    const nextTrail = [...trail, hop];
+    const children = byParent.get(hop.id) ?? [];
+    if (children.length === 0) {
+      paths.push(nextTrail);
+      return;
+    }
+    for (const child of children) walk(child, nextTrail);
+  }
+  walk(origin, []);
+  return paths;
+}
+
+export default function JourneyPage() {
+  const params = useParams<{ id: string }>();
+  const [echo, setEcho] = useState<Echo | null>(null);
+  const [hops, setHops] = useState<Hop[] | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/journey/${params.id}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setEcho(data.echo);
+    setHops(data.hops);
+  }, [params.id]);
+
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 9000);
+    return () => clearInterval(interval);
+  }, [load]);
+
+  if (!echo || !hops) {
+    return (
+      <main className="px-5 pt-10">
+        <p className="text-sm text-white/40">Chargement du voyage…</p>
+      </main>
+    );
+  }
+
+  const paths = buildBranches(hops);
+  const uniqueTravelers = hops.filter((h) => !h.is_origin).length;
+
+  return (
+    <main className="px-5 pt-10">
+      <div className="mb-1 text-xs uppercase tracking-widest text-white/30">
+        Écho #{echo.id.slice(0, 6).toUpperCase()}
+      </div>
+      <h1 className="text-lg font-semibold">
+        {echo.song_title}
+        {echo.song_artist ? ` — ${echo.song_artist}` : ''}
+      </h1>
+      <p className="mt-1 text-sm text-white/50">
+        {moodEmoji(echo.mood)} Envoyé depuis {flagFor(echo.origin_country_code)} {echo.origin_city}
+      </p>
+      <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs text-white/40">
+        {uniqueTravelers === 0
+          ? "Cet écho n'a pas encore été découvert. Le monde dort encore."
+          : `Découvert par ${uniqueTravelers} personne${uniqueTravelers > 1 ? 's' : ''} jusqu'ici.`}
+      </p>
+
+      <div className="mt-8 space-y-8">
+        {paths.map((path, pi) => (
+          <div key={pi} className="relative pl-6">
+            <div className="absolute bottom-2 left-[7px] top-2 w-px bg-gradient-to-b from-echo-500/60 to-glow-400/20" />
+            {path.map((hop, hi) => (
+              <div key={hop.id} className="relative mb-6 last:mb-0">
+                <div
+                  className={`absolute -left-[26px] top-0.5 h-3.5 w-3.5 rounded-full border-2 ${
+                    hop.is_origin
+                      ? 'border-glow-400 bg-glow-400'
+                      : 'border-echo-500 bg-night-950'
+                  }`}
+                />
+                <div className="text-sm">
+                  <span className="font-medium">
+                    {flagFor(hop.country_code)} {hop.city}
+                  </span>
+                  {hop.is_origin ? (
+                    <span className="ml-2 text-xs text-glow-400">point de départ</span>
+                  ) : (
+                    <span className="ml-2 text-xs text-white/30">{new Date(hop.received_at).toLocaleString('fr-FR')}</span>
+                  )}
+                </div>
+                {!hop.is_origin && (
+                  <div className="mt-0.5 text-xs text-white/40">
+                    {hop.reveal_choice === 'revealed' ? '👤 identité révélée' : '🌑 reste un mystère'}
+                    {hop.is_bot ? '' : ' · personne réelle'}
+                  </div>
+                )}
+                {hop.reply_note && <p className="mt-1 text-xs text-white/60">💬 « {hop.reply_note } »</p>}
+                {hi === path.length - 1 && !hop.is_origin && hop.chain_length < 6 && (
+                  <p className="mt-1 text-xs italic text-white/25">…toujours en chemin</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
