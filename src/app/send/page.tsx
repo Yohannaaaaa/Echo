@@ -10,6 +10,7 @@ export default function SendPage() {
   const { user } = useIdentity();
   const [songTitle, setSongTitle] = useState('');
   const [songArtist, setSongArtist] = useState('');
+  const [songUrl, setSongUrl] = useState('');
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
@@ -26,7 +27,7 @@ export default function SendPage() {
     const res = await fetch('/api/echo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ songTitle, songArtist, mood, note }),
+      body: JSON.stringify({ songTitle, songArtist, songUrl, mood, note }),
     });
     const data = await res.json();
     setSending(false);
@@ -55,6 +56,7 @@ export default function SendPage() {
               setSentId(null);
               setSongTitle('');
               setSongArtist('');
+              setSongUrl('');
               setMood(null);
               setNote('');
             }}
@@ -88,6 +90,13 @@ export default function SendPage() {
             value={songArtist}
             onChange={(e) => setSongArtist(e.target.value)}
             placeholder="Artiste (optionnel)"
+            className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
+          />
+          <input
+            type="url"
+            value={songUrl}
+            onChange={(e) => setSongUrl(e.target.value)}
+            placeholder="Lien vers la chanson — Spotify, YouTube… (optionnel)"
             className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/30 focus:border-echo-500"
           />
         </div>

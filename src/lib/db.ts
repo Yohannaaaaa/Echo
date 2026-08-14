@@ -123,6 +123,12 @@ async function ensureSchema(db: Client) {
   } catch (err) {
     if (!String(err).includes('no such column')) throw err;
   }
+
+  try {
+    await db.execute('ALTER TABLE echoes ADD COLUMN song_url TEXT');
+  } catch (err) {
+    if (!String(err).includes('duplicate column')) throw err;
+  }
 }
 
 export async function getDb(): Promise<Client> {

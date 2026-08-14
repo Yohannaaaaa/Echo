@@ -15,6 +15,7 @@ type InboxItem = {
   countryCode: string;
   songTitle: string;
   songArtist: string | null;
+  songUrl: string | null;
   mood: string;
   note: string | null;
   sentAt: number;
@@ -110,6 +111,17 @@ export default function InboxPage() {
               </span>{' '}
               à {timeOf(item.sentAt)}.
             </p>
+
+            {item.songUrl && (
+              <a
+                href={item.songUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-xs text-echo-400 underline underline-offset-2"
+              >
+                🔗 Écouter la chanson
+              </a>
+            )}
 
             {item.note && <p className="mt-2 text-sm text-white/60">💬 « {item.note} »</p>}
 

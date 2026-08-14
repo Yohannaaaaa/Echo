@@ -23,6 +23,7 @@ type Echo = {
   id: string;
   song_title: string;
   song_artist: string | null;
+  song_url: string | null;
   mood: string;
   note: string | null;
   sent_at: number;
@@ -96,6 +97,16 @@ export default function JourneyPage() {
       <p className="mt-1 text-sm text-white/50">
         {moodEmoji(echo.mood)} Envoyé depuis {flagFor(echo.origin_country_code)} {echo.origin_city}
       </p>
+      {echo.song_url && (
+        <a
+          href={echo.song_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-flex items-center gap-1 text-xs text-echo-400 underline underline-offset-2"
+        >
+          🔗 Écouter la chanson
+        </a>
+      )}
       <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs text-white/40">
         {uniqueTravelers === 0
           ? "Cet écho n'a pas encore été découvert. Le monde dort encore."

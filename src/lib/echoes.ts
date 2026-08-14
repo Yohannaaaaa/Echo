@@ -27,6 +27,7 @@ export type EchoRow = {
   creator_id: string;
   song_title: string;
   song_artist: string | null;
+  song_url: string | null;
   mood: string;
   note: string | null;
   sent_at: number;
@@ -40,6 +41,7 @@ export async function createEcho(
   countryCode: string,
   songTitle: string,
   songArtist: string | undefined,
+  songUrl: string | undefined,
   mood: string,
   note: string | undefined,
 ) {
@@ -47,9 +49,9 @@ export async function createEcho(
   const echoId = uuidv4();
   const now = Date.now();
   await db.execute({
-    sql: `INSERT INTO echoes (id, creator_id, song_title, song_artist, mood, note, sent_at, origin_city, origin_country_code)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [echoId, creatorId, songTitle, songArtist ?? null, mood, note ?? null, now, city, countryCode],
+    sql: `INSERT INTO echoes (id, creator_id, song_title, song_artist, song_url, mood, note, sent_at, origin_city, origin_country_code)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [echoId, creatorId, songTitle, songArtist ?? null, songUrl ?? null, mood, note ?? null, now, city, countryCode],
   });
 
   const hopId = uuidv4();
@@ -146,7 +148,7 @@ export async function getInboxForUser(userId: string) {
   const result = await db.execute({
     sql: `SELECT h.id as hopId, h.echo_id as echoId, h.chain_length as chainLength, h.received_at as receivedAt,
                  h.reply_note as replyNote, h.reveal_choice as revealChoice, h.city as city, h.country_code as countryCode,
-                 e.song_title as songTitle, e.song_artist as songArtist, e.mood as mood, e.note as note,
+                 e.song_title as songTitle, e.song_artist as songArtist, e.song_url as songUrl, e.mood as mood, e.note as note,
                  e.sent_at as sentAt, e.origin_city as originCity, e.origin_country_code as originCountryCode,
                  p.city as fromCity, p.country_code as fromCountryCode, p.reply_note as fromNote
           FROM hops h
