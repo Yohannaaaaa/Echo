@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import EchoMark from './EchoMark';
 
 const ITEMS = [
-  { href: '/', label: 'Accueil', icon: '🌌' },
+  { href: '/', label: 'Accueil', icon: null },
   { href: '/send', label: 'Envoyer', icon: '🎵' },
   { href: '/inbox', label: 'Reçus', icon: '📥' },
   { href: '/mine', label: 'Last Echo', icon: '🌑' },
@@ -26,7 +27,11 @@ export default function BottomNav() {
                 active ? 'text-echo-400' : 'text-white/50'
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
+              {item.icon ? (
+                <span className="text-lg">{item.icon}</span>
+              ) : (
+                <EchoMark size={20} animated={false} />
+              )}
               <span>{item.label}</span>
             </Link>
           );
