@@ -12,10 +12,10 @@ const ITEMS = [
   { href: '/global', label: 'Global', icon: '🌍' },
 ];
 
-export default function BottomNav() {
+export default function TopNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-night-950/90 backdrop-blur-md">
+    <nav className="fixed top-0 left-0 right-0 z-40 border-b border-white/10 bg-night-950/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-md items-stretch justify-between px-2">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
